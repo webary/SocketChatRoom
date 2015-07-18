@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mfcServer1", "mfcServer1\mfcServer1.vcxproj", "{8174B338-B263-430D-8155-A05D4A847F08}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8174B338-B263-430D-8155-A05D4A847F08}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8174B338-B263-430D-8155-A05D4A847F08}.Debug|Win32.Build.0 = Debug|Win32
+		{8174B338-B263-430D-8155-A05D4A847F08}.Release|Win32.ActiveCfg = Release|Win32
+		{8174B338-B263-430D-8155-A05D4A847F08}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,29 @@
+userA给userB
+
+
+
+userA发送
+
+userA@ filename|size&FileSend
+
+>>>userB
+
+服务器转发
+userB@ filename|size&FileSend<<<userA
+
+
+
+userB发送
+
+userB@ 0&AskFileData>>>userA
+userB@ NO&AskFileData>>>userA
+
+服务器转发
+userA@ 0&AskFileData
+userA@ NO&AskFileData
+
+userA回复
+userA@ DataData&FileData>>>userB
+
+服务器转发
+userB@ DataData&FileData
