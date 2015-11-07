@@ -1,7 +1,10 @@
 #ifndef __MD5_H__
 #define __MD5_H__
-#pragma message("--��ܰ��ʾ���뽫���п�����Ϊ�����̵߳��ԡ���ʽ")
-#define dynamic_link 0
+
+#define _CRT_SECURE_NO_WARNINGS
+//在编译器中调整模式后才能正确编译通过
+#pragma message("--温馨提示：请将运行库设置为“多线程调试”方式")
+#define dynamic_link 0  //设置动态链接属性,设置为0则表示静态链接
 
 #if dynamic_link
 	#ifdef   FILE_DLL_EXPORT
@@ -14,7 +17,6 @@
 	#define DLL_EXPORT
 #endif
 
-#define _CRT_SECURE_NO_WARNINGS
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -42,7 +44,7 @@ private:
     void Decode (unsigned long int *output, unsigned char *input, unsigned int len);
     void MD5_memset (unsigned char* output,int value,unsigned int len);
 };
-//����һ���ַ�����md5ֵ
+//全局函数:返回一个字符串str的md5值md5_value
 DLL_EXPORT const char* getStrMd5(char* md5_value, const char* str);
 
 #endif
