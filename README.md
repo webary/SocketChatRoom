@@ -4,7 +4,7 @@
 
 开发工具：visual studio 2012 
 
-开发平台：windows8 , MFC工程
+开发平台：windows8 , MFC工程 , socket通信
 
 实现的功能有：
 * 账号登录和注册
