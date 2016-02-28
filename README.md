@@ -1,12 +1,12 @@
 # SocketChatRoom
 
-利用socket通信机制实现简单的聊天室功能
+__介绍__：利用socket通信机制实现简单的聊天室功能
 
-开发工具：visual studio 2012 
+__开发工具__：visual studio 2012 
 
-开发平台：windows8 , MFC工程 , socket通信
+__开发平台__：windows8 , MFC工程 , socket通信
 
-实现的功能有：
+实现的__功能__有：
 * 账号登录和注册
 * 用户之间互相发送在线消息
 * 用户之间互相发送文件
