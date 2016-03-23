@@ -1,4 +1,4 @@
-## userA给userB发文件的过程如下：
+﻿## userA给userB发文件的过程如下：
 
 
 #### userA发送文件传输请求：
