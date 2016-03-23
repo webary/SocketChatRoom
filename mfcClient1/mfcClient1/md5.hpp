@@ -4,14 +4,14 @@
 #define dynamic_link 0
 
 #if dynamic_link
-	#ifdef   FILE_DLL_EXPORT
-		#define DLL_EXPORT __declspec(dllexport)
-	#else
-		#define DLL_EXPORT __declspec(dllimport)
-	#endif
+#   ifdef   FILE_DLL_EXPORT
+#       define DLL_EXPORT __declspec(dllexport)
+#   else
+#       define DLL_EXPORT __declspec(dllimport)
+#   endif
 #else
-	#pragma comment(lib,"md5.lib")
-	#define DLL_EXPORT
+#   pragma comment(lib,"md5.lib")
+#   define DLL_EXPORT
 #endif
 
 #define _CRT_SECURE_NO_WARNINGS
@@ -19,12 +19,13 @@
 #include "stdlib.h"
 #include "string.h"
 
-class DLL_EXPORT MD5 {
+class DLL_EXPORT MD5
+{
 public:
     MD5();
     virtual ~MD5();
     bool fileMd5(char *pMd5, const char *pFileName);
-	bool strMd5 (char *pMd5, const char *str);
+    bool strMd5 (char *pMd5, const char *str);
 
 private:
     unsigned long int state[4];		/* state (ABCD) */
