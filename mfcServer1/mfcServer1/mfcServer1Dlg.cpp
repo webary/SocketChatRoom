@@ -291,7 +291,7 @@ void CmfcServer1Dlg::OnOpenCloseServer()
     UpdateData(false);
     SetDlgItemText(IDC_OpenCloseServer, "关闭服务器");
     UpdateEvent("服务器已打开.");
-    sprintf_s(nd.szTip, "服务器 - 已打开\r\n端口号：%d", m_port);
+    sprintf_s(nd.szTip, "服务器 - 已打开\r\n端口号：%u", m_port);
     Shell_NotifyIcon(NIM_MODIFY, &nd);
 }
 
@@ -390,7 +390,7 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                                 GetOnlineNum();
                                 UpdateData(false);
                                 CString ss;
-                                ss.Format("%d", m_userOnlineCount);
+                                ss.Format("%u", m_userOnlineCount);
                                 UpdateEvent(_T("用户[" + msg.userId + "]上线. 在线用户数：" + ss));
                                 char olMsg[1024];
                                 string _str;
@@ -654,7 +654,6 @@ void CmfcServer1Dlg::OnDropFiles(HDROP hDropInfo)
 {
     // 读取文件并发送文件给所有用户
     SetForegroundWindow();		//设置窗口置顶显示
-    int  nFileCount = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 256);   //获取拖入的文件数量
     char filepath[1024] = "";
     DragQueryFile(hDropInfo, 0, filepath, 1024);	// 获取拖放第1个文件的完整文件名
     if (GetFileAttributes(filepath) != FILE_ATTRIBUTE_DIRECTORY) {
@@ -674,7 +673,7 @@ void CmfcServer1Dlg::OnDropFiles(HDROP hDropInfo)
         static MD5 md5;
         char szMD5[33] = "";
         md5.fileMd5(szMD5, filepath);
-        s.Format("%s|%d|%s", name, size, szMD5);
+        s.Format("%s|%ld|%s", name, size, szMD5);
         SendMSG(mymsg.join(s, TYPE[FileSend], TYPE[AllUser], "服务器"));
     } else
         MessageBox("拖入的不是一个有效文件", "温馨提示");
@@ -895,16 +894,16 @@ void CmfcServer1Dlg::modifyStatus(CString sta, bool _sleep)
 //这两个函数使用了theApp,因此不能放在类声明中
 void RecvFile::addPacketage(const char *data)
 {
-    static CmfcServer1Dlg* pDlg = (CmfcServer1Dlg*)theApp.GetMainWnd();
+    static CmfcServer1Dlg* pDlg = static_cast<CmfcServer1Dlg*>(theApp.GetMainWnd());
     if (packageRecv < packageNum) {
         packageRecv++;
         if (packageRecv < packageNum)		//还有数据包没有接收
             pDlg->SendMSG(pDlg->mymsg.join(getPackRecv(), TYPE[AskFileData], pDlg->fileUser, "服务器"));//请求下一个数据包
         strcpy_s(packageData[packageRecv - 1], data);
     }
-    static long timeNow = timeStart;
-    if (pDlg != 0) {
-        if (clock() - timeNow>400) {
+    if (pDlg != NULL) {
+        static long timeNow = timeStart;
+        if (clock() - timeNow > 400) {
             timeNow = clock();
             CString str;
             str.Format("文件已接收 %.1f%%！    用时 %.1fs   平均速度 %.1fk/s", 100.0 * packageRecv / packageNum
@@ -917,7 +916,7 @@ void RecvFile::addPacketage(const char *data)
 }
 void RecvFile::saveFile(int useTime)
 {
-    static CmfcServer1Dlg* pDlg = (CmfcServer1Dlg*)theApp.GetMainWnd();
+    static CmfcServer1Dlg* pDlg = static_cast<CmfcServer1Dlg*>(theApp.GetMainWnd());
     static HWND hWnd = pDlg->GetSafeHwnd();
     bool clear = 1;	//是否清空数据包内容
     if (packageNum == packageRecv) {

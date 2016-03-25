@@ -1,0 +1,8 @@
+Debug
+Release
+mfcServer1/Debug
+mfcServer1/Release
+mfcServer1/mfcServer1/offlineMsg
+
+*.pdb
+mfcServer1/history.txt

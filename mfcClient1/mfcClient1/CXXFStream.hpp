@@ -47,7 +47,7 @@ public:
     void close() {
         file.close();
     }
-    int getOX(int a,int b) { //将2个16进制转换为一个10进制数返回
+    char getOX(int a,int b) { //将2个16进制转换为一个10进制数返回
         if(a>47 && a<103 && b>47 && b<103)
             return (ox2d[a-48]<<4)+ox2d[b-48];
         else

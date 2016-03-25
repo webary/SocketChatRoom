@@ -31,7 +31,7 @@ struct MyMsg {
     CString type;
     CString fromUser;
     CString toUser;
-    MyMsg(CString str = "") {
+    explicit MyMsg(CString str = "") {
         load(str);
     }
     CString load(CString str) {

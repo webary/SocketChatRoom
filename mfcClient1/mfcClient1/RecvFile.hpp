@@ -51,7 +51,7 @@ public:
         return recving;
     }
     const CString& getPackRecv() {
-        pack_rec.Format("%d",packageRecv);
+        pack_rec.Format("%ld",packageRecv);
         return pack_rec;
     }
     long getPackNum() {
