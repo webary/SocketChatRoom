@@ -2,32 +2,30 @@
 #include "resource.h"
 #include "ServerSocket.h"
 
-
 CServerSocket::CServerSocket(void)
 {
 }
-
 
 CServerSocket::~CServerSocket(void)
 {
 }
 
-//å“åº”ä¸€ä¸ªæ–°çš„è¿æ¥è¯·æ±‚
+//ÏìÓ¦Ò»¸öĞÂµÄÁ¬½ÓÇëÇó
 void CServerSocket::OnAccept(int nErrorCode)
 {
-    m_pDlg->AddClient();//è½¬ç»™ä¸»çª—å£ç›¸å…³å‡½æ•°å¤„ç†
+    m_pDlg->AddClient();//×ª¸øÖ÷´°¿ÚÏà¹Øº¯Êı´¦Àí
     CSocket::OnAccept(nErrorCode);
 }
 
-//å“åº”ä¸€ä¸ªå…³é—­è¯·æ±‚
+//ÏìÓ¦Ò»¸ö¹Ø±ÕÇëÇó
 void CServerSocket::OnClose(int nErrorCode)
 {
     CSocket::OnClose(nErrorCode);
 }
 
-//å“åº”æ¥æ”¶åˆ°æ–°çš„æ¶ˆæ¯çš„è¯·æ±‚
+//ÏìÓ¦½ÓÊÕµ½ĞÂµÄÏûÏ¢µÄÇëÇó
 void CServerSocket::OnReceive(int nErrorCode)
 {
-    m_pDlg->ReceData(this);//è½¬ç»™ä¸»çª—å£ç›¸å…³å‡½æ•°å¤„ç†
+    m_pDlg->ReceData(this);//×ª¸øÖ÷´°¿ÚÏà¹Øº¯Êı´¦Àí
     CSocket::OnReceive(nErrorCode);
 }

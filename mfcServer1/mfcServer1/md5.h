@@ -2,19 +2,19 @@
 #define __MD5_H__
 
 #define _CRT_SECURE_NO_WARNINGS
-//åœ¨ç¼–è¯‘å™¨ä¸­è°ƒæ•´æ¨¡å¼åæ‰èƒ½æ­£ç¡®ç¼–è¯‘é€šè¿‡
-#pragma message("--æ¸©é¦¨æç¤ºï¼šè¯·å°†è¿è¡Œåº“è®¾ç½®ä¸ºâ€œå¤šçº¿ç¨‹è°ƒè¯•â€æ–¹å¼")
-#define dynamic_link 0  //è®¾ç½®åŠ¨æ€é“¾æ¥å±æ€§,è®¾ç½®ä¸º0åˆ™è¡¨ç¤ºé™æ€é“¾æ¥
+//ÔÚ±àÒëÆ÷ÖĞµ÷ÕûÄ£Ê½ºó²ÅÄÜÕıÈ·±àÒëÍ¨¹ı
+#pragma message("--ÎÂÜ°ÌáÊ¾£ºÇë½«ÔËĞĞ¿âÉèÖÃÎª¡°¶àÏß³Ìµ÷ÊÔ¡±·½Ê½")
+#define dynamic_link 0  //ÉèÖÃ¶¯Ì¬Á´½ÓÊôĞÔ,ÉèÖÃÎª0Ôò±íÊ¾¾²Ì¬Á´½Ó
 
 #if dynamic_link
-#ifdef   FILE_DLL_EXPORT
-#define DLL_EXPORT __declspec(dllexport)
+#   ifdef FILE_DLL_EXPORT
+#       define DLL_EXPORT __declspec(dllexport)
+#   else
+#       define DLL_EXPORT __declspec(dllimport)
+#   endif
 #else
-#define DLL_EXPORT __declspec(dllimport)
-#endif
-#else
-#pragma comment(lib,"md5.lib")
-#define DLL_EXPORT
+#   pragma comment(lib,"md5.lib")
+#   define DLL_EXPORT
 #endif
 
 #include "stdio.h"
@@ -45,7 +45,7 @@ private:
     void Decode (unsigned long int *output, unsigned char *input, unsigned int len);
     void MD5_memset (unsigned char* output,int value,unsigned int len);
 };
-//å…¨å±€å‡½æ•°:è¿”å›ä¸€ä¸ªå­—ç¬¦ä¸²strçš„md5å€¼md5_value
+//È«¾Öº¯Êı:·µ»ØÒ»¸ö×Ö·û´®strµÄmd5Öµmd5_value
 DLL_EXPORT const char* getStrMd5(char* md5_value, const char* str);
 
 #endif

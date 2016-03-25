@@ -1,5 +1,4 @@
 #pragma once
-#include "afxsock.h"
 //数据缓冲区大小
 #define DATA_BUF_SIZE		(8*1024)
 //文件拆包后每个包最大字节数
@@ -8,11 +7,10 @@
 #define MAX_PACKAGE_NUM		(16*1024)
 
 #include "../../mfcClient1/mfcClient1/RecvFile.hpp"
-#include "../../mfcClient1/mfcClient1/CXXFStream.hpp"
-
 
 #include "mfcServer1Dlg.h"		//主对话框头文件
-class CmfcServer1Dlg;
+
+class CmfcServer1Dlg; //类声明,因为下面定义了一个主窗口指针
 class CServerSocket : public CSocket
 {
 public:
