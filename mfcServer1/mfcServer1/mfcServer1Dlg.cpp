@@ -5,11 +5,11 @@
 #include "stdafx.h"
 #include "mfcServer1.h"
 #include "mfcServer1Dlg.h"
-#include "afxdialogex.h"
-#include <iostream>
 #include <string>
-#include "md5.h"
+
+#include "../../mfcClient1/mfcClient1/md5.h"
 #include "../../mfcClient1/mfcClient1/CXXFStream.hpp"
+
 using namespace std;
 
 char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1];	//保存需要发送的文件内容

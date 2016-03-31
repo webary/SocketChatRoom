@@ -38,11 +38,6 @@
 #include <afxsock.h>            // MFC Ì×½Ó×ÖÀ©Õ¹
 
 
-#include "iostream"
-#include <string>
-#include "fstream"
-using namespace std;
-
 #include "myType.h"
 
 

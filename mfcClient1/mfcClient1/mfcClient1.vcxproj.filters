@@ -45,6 +45,12 @@
     <ClInclude Include="RecvFile.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="LoginDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatLogDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mfcClient1.cpp">
@@ -57,6 +63,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ClientSocket.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LoginDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatLogDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -72,9 +84,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\mfcClient1.ico">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="res\c.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

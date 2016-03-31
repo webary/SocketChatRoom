@@ -1,22 +1,22 @@
 #ifndef _CXXFSTREAM_HPP_
 #define _CXXFSTREAM_HPP_
 
-#include "fstream"
-using namespace std;
+#include <fstream>
+
 class CXXFStream
 {
-    fstream file;
+    std::fstream file;
     unsigned size;
     char ox2d[55];	//保存16进制对应位的十进制数;48~57表示0~9;
 public:
-    CXXFStream(const char* _name,ios_base::openmode _mode):file(_name,_mode|=ios::binary) {
+    CXXFStream(const char* _name,std::ios_base::openmode _mode):file(_name,_mode| std::ios::binary) {
         if(!file) {
             size = 0;
             return;
         }
-        file.seekg(0, ios::end);
+        file.seekg(0, std::ios::end);
         size = (long)file.tellg();
-        file.seekg(0, ios::beg);//将指针重新定位到文件开头
+        file.seekg(0, std::ios::beg);//将指针重新定位到文件开头
         int i;
         for(i=0; i<10; ++i)	//0~9
             ox2d[i] = i;
@@ -40,14 +40,14 @@ public:
             return ;
         unsigned i=0;
         for(i=0; i<_count; ++i) {
-            char ch[1] = {getOX(_str[i<<1],_str[1+(i<<1)])-128};
+            char ch[1] = {(char)(getOX(_str[i<<1],_str[1+(i<<1)])-128)};
             file.write(ch,sizeof(ch));
         }
     }
     void close() {
         file.close();
     }
-    char getOX(int a,int b) { //将2个16进制转换为一个10进制数返回
+    int getOX(int a,int b) { //将2个16进制转换为一个10进制数返回
         if(a>47 && a<103 && b>47 && b<103)
             return (ox2d[a-48]<<4)+ox2d[b-48];
         else
@@ -56,7 +56,7 @@ public:
     const unsigned& getSize() {
         return size;
     }
-    fstream& getStream() {
+    std::fstream& getStream() {
         return file;
     }
 };

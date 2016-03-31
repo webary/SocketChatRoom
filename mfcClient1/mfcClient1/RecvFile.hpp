@@ -2,8 +2,9 @@
 #define _RECVFILE_HPP_
 
 #include <fstream>
-using namespace std;
 #include <ctime>
+#include <afxdialogex.h>
+
 extern char packageData[MAX_PACKAGE_NUM][2*PACKAGE_SIZE+1];
 class RecvFile
 {
@@ -31,7 +32,7 @@ public:
         packageRecv = 0;
         clearPackData();
         recving = 1;
-        ofstream out(fileNewName);
+        std::ofstream out(fileNewName);
         out.close();
     }
     void clearPackData() {
@@ -51,7 +52,7 @@ public:
         return recving;
     }
     const CString& getPackRecv() {
-        pack_rec.Format("%ld",packageRecv);
+        pack_rec.Format("%ld", packageRecv);
         return pack_rec;
     }
     long getPackNum() {

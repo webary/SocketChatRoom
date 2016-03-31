@@ -14,19 +14,20 @@
     <ProjectGuid>{6CFA9910-5EC9-435A-B692-8D2F8BA68615}</ProjectGuid>
     <RootNamespace>mfcClient1</RootNamespace>
     <Keyword>MFCProj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110_xp</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
@@ -43,6 +44,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>E:\Program Files\MySQL\MySQL Server 5.6\include;E:\Program Files\OpenCV\2.4.9\OpenCV\build\include;E:\Program Files\OpenCV\2.4.9\OpenCV\build\include\opencv;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -54,6 +56,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -80,6 +83,7 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -104,8 +108,10 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ChatLogDlg.h" />
     <ClInclude Include="ClientSocket.h" />
     <ClInclude Include="CXXFStream.hpp" />
+    <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="md5.hpp" />
     <ClInclude Include="mfcClient1.h" />
     <ClInclude Include="mfcClient1Dlg.h" />
@@ -115,7 +121,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ChatLogDlg.cpp" />
     <ClCompile Include="ClientSocket.cpp" />
+    <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="mfcClient1.cpp" />
     <ClCompile Include="mfcClient1Dlg.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -130,7 +138,6 @@
     <None Include="res\mfcClient1.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\c.ico" />
     <Image Include="res\mfcClient1.ico" />
   </ItemGroup>
   <ItemGroup>
