@@ -7,7 +7,7 @@ class CXXFStream
 {
     std::fstream file;
     unsigned size;
-    char ox2d[55];	//保存16进制对应位的十进制数;48~57表示0~9;
+    char ox2d[55];  //保存16进制对应位的十进制数;48~57表示0~9;
 public:
     CXXFStream(const char* _name,std::ios_base::openmode _mode):file(_name,_mode| std::ios::binary) {
         if(!file) {
@@ -18,9 +18,9 @@ public:
         size = (long)file.tellg();
         file.seekg(0, std::ios::beg);//将指针重新定位到文件开头
         int i;
-        for(i=0; i<10; ++i)	//0~9
+        for(i=0; i<10; ++i) //0~9
             ox2d[i] = i;
-        for(i=49; i<55; ++i)	//a~f、A~F
+        for(i=49; i<55; ++i)    //a~f、A~F
             ox2d[i] = ox2d[i-32] = i-39;
     }
     ~CXXFStream() {
@@ -31,7 +31,7 @@ public:
             return 0;
         char ch[1];
         unsigned i=0;
-        for(i=0; i<_count && file.read(ch,sizeof(ch)); ++i)	//读取文件中的内容
+        for(i=0; i<_count && file.read(ch,sizeof(ch)); ++i) //读取文件中的内容
             sprintf(_str+2*i,"%02x",int(ch[0])+128);
         return i;
     }

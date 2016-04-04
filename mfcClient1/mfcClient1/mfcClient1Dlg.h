@@ -22,7 +22,7 @@ public:
     int m_port;
     CString m_ip;
     bool logining;          //当前正在登陆？
-    bool m_connect;         //当前已连接到服务器？
+    bool m_connected;       //当前已连接到服务器？
     bool firstCon;          //第一次连接？
 
     RecvFile rf;            //接收文件对象
@@ -40,7 +40,7 @@ public:
         firstCon = 1;
         logining = 0;
         readFileEnd = 0;
-        m_connect = 0;
+        m_connected = 0;
         m_DataSend = m_userID = "";
 
         char path[2048] = "";
@@ -54,8 +54,8 @@ public:
         DeleteFile(myDIR + "TransLog.txt");
     }
     virtual ~ClientInfo() {
-        if (m_connect) {
-            pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], "", "", "", m_pw), 0);
+        if (m_connected) {
+            pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], pSock->userID, "", "", m_pw), 0);
             pSock->Close();
             delete pSock;
         }
@@ -85,7 +85,6 @@ protected:
     virtual void OnOK();
     virtual BOOL PreTranslateMessage(MSG* pMsg);
 
-    // 实现
 public:
     HICON m_hIcon;
     CChatLogDlg* pChatlog;

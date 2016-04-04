@@ -153,7 +153,7 @@ void CLoginDlg::OnRegist()
         return;
     }
     if (KillTimer(0)) {
-        sock.SendMSG(sock.mymsg.join("", TYPE[Register], "", "", "", pw), 0);
+        sock.SendMSG(sock.mymsg.join("", TYPE[Register], userID, "", "", pw), 0);
         sock.Close();
         MessageBox("注册信息发送成功，审核通过后即可登陆！", "温馨提示");
         OnOK();

@@ -191,13 +191,13 @@ void CmfcClient1Dlg::OnTimer(UINT nIDEvent)
         }
     }
     elif(nIDEvent == 1) {	//心跳机制
-        if (m_connect)
-            pSock->SendMSG(pSock->mymsg.join("", TYPE[I_am_online], "", "", ""), 0);
+        if (m_connected)
+            pSock->SendMSG(pSock->mymsg.join("", TYPE[I_am_online], pSock->userID, "", ""), 0);
     }
     elif(nIDEvent == 2) {	//接收文件监测
         KillTimer(2);
         if (rf.isRecving()) {
-            pSock->SendMSG(pSock->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], "", "", fileUser), 0);
+            pSock->SendMSG(pSock->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], pSock->userID, "", fileUser), 0);
             rf.recvEnd();
             pSock->updateEvent("接收文件" + rf.getFileName() + "超时", "系统通知");
             ::MessageBox(GetSafeHwnd(), "接收文件超时，请稍后再试！", "温馨提示", 0);
@@ -231,9 +231,9 @@ void CmfcClient1Dlg::OnTimer(UINT nIDEvent)
 
 void CmfcClient1Dlg::OnConnect()
 {
-    if (m_connect) {    // 如果已经连接，则断开服务器
-        m_connect = false;
-        pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], "", "", "", m_pw), 0);
+    if (m_connected) {    // 如果已经连接，则断开服务器
+        m_connected = false;
+        pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], pSock->userID, "", "", m_pw), 0);
         pSock->Close();
         pSock = NULL;
         m_ConPC.SetWindowText(_T("连接服务器"));
@@ -267,10 +267,10 @@ void CmfcClient1Dlg::OnConnect()
             MessageBox("连接服务器失败：" + getLastErrorStr(), "温馨提示");
         return;
     } else {
-        pSock->SendMSG(pSock->mymsg.join("", TYPE[Login], "", "", "", m_pw), 0);	//连接服务器时发送密码以验证身份
-        SetTimer(0, 3000, NULL);		//设置延时
+        pSock->SendMSG(pSock->mymsg.join("", TYPE[Login], pSock->userID, "", "", m_pw), 0); //连接服务器时发送密码以验证身份
+        SetTimer(0, 3000, NULL); //设置登录延时
         m_ConPC.SetWindowText(_T("正在连接服务器..."));
-        GetDlgItem(IDC_Connect)->EnableWindow(0);	//连接请求送出但还未被回应前屏蔽连接按钮
+        GetDlgItem(IDC_Connect)->EnableWindow(0); //连接请求送出但还未被回应前屏蔽连接按钮
     }
     firstCon = 0;
     GetDlgItem(IDC_DataSend)->SetFocus();
@@ -278,7 +278,7 @@ void CmfcClient1Dlg::OnConnect()
 
 void CmfcClient1Dlg::OnSend()
 {
-    if (!m_connect) {
+    if (!m_connected) {
         MessageBox("请先连接服务器", "温馨提示");
         return;                               //未连接服务器则不执行
     }
@@ -287,7 +287,7 @@ void CmfcClient1Dlg::OnSend()
         if (m_msgTo == m_userID) {
             MessageBox("请不要给自己发送消息", "温馨提示");
         } else {
-            pSock->SendMSG(pSock->mymsg.join(m_DataSend, TYPE[ChatMsg], "", "", m_msgTo));
+            pSock->SendMSG(pSock->mymsg.join(m_DataSend, TYPE[ChatMsg], pSock->userID, "", m_msgTo));
         }
     } else {
         MessageBox("请先输入内容", "温馨提示");
@@ -303,9 +303,9 @@ void CmfcClient1Dlg::OnOK()
 void CmfcClient1Dlg::OnLogoff()
 {
     KillTimer(4);
-    if (m_connect) {    // 如果已经连接，则断开服务器
-        m_connect = false;
-        pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], "", "", "", m_pw), 0);
+    if (m_connected) {    // 如果已经连接，则断开服务器
+        m_connected = false;
+        pSock->SendMSG(pSock->mymsg.join("", TYPE[Logout], pSock->userID, "", "", m_pw), 0);
         pSock->Close();
         pSock = NULL;
         GetDlgItem(IDC_DataSend)->SetWindowText("");
@@ -337,13 +337,13 @@ void CmfcClient1Dlg::OnCbnSelChangeMsgTo()
     if (m_msgTo == "服务器" || m_msgTo == "公共聊天室")
         modifyStatus("你可以向[" + m_msgTo + "]自由发送消息");
     else
-        pSock->SendMSG(pSock->mymsg.join(m_msgTo, TYPE[OnlineState]), 0);
+        pSock->SendMSG(pSock->mymsg.join(m_msgTo, TYPE[OnlineState], pSock->userID), 0);
 }
 
 void CmfcClient1Dlg::OnDropFiles(HDROP hDropInfo)
 {
     SetForegroundWindow();		//设置窗口置顶显示
-    if (!m_connect) {
+    if (!m_connected) {
         MBox("连接已断开，请先连接服务器！");
         return;
     }
@@ -381,6 +381,7 @@ void CmfcClient1Dlg::OnDropFiles(HDROP hDropInfo)
     DragFinish(hDropInfo);
     CDialogEx::OnDropFiles(hDropInfo);
 }
+
 
 
 #include "md5.h"
@@ -423,6 +424,6 @@ void ClientInfo::save_SendFileInfo(const char* filepath, long size)
     char szMD5[33] = "";
     md5.fileMd5(szMD5, filepath);
     s.Format("%s|%d|%s", name, size, szMD5);
-    pSock->SendMSG(pSock->mymsg.join(s, TYPE[FileSend], "", "", m_msgTo), 0);
+    pSock->SendMSG(pSock->mymsg.join(s, TYPE[FileSend], pSock->userID, "", m_msgTo), 0);
     rf.setPackNum((size + PACKAGE_SIZE - 1) / PACKAGE_SIZE);
 }

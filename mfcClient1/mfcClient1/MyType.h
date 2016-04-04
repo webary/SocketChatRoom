@@ -1,3 +1,6 @@
+#ifndef _MYTYPE_H_
+#define _MYTYPE_H_
+
 #define   ChatMsg             0
 #define   Server_is_closed    1
 #define   UserList            2
@@ -39,3 +42,5 @@
 #define   TYPE_Login               "Login"
 #define   TYPE_Register            "Register"
 #define   TYPE_Status              "Status"
+
+#endif //_MYTYPE_H_

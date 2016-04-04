@@ -6,8 +6,6 @@
 
 using namespace std;
 
-CString CClientSocket::userID = "";
-
 char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1];
 
 CString TYPE[30] = { TYPE_ChatMsg , TYPE_Server_is_closed , TYPE_UserList , TYPE_OnlineState , TYPE_FileSend , TYPE_FileData , TYPE_AskFileData , TYPE_File_NO , TYPE_File_Over , TYPE_File_Fail , TYPE_LoginFail , TYPE_UserIsOnline , TYPE_OfflineMsg , TYPE_AllUser , TYPE_AddUserList , TYPE_I_am_online , TYPE_Logout , TYPE_Login , TYPE_Register , TYPE_Status };
@@ -45,7 +43,7 @@ void RecvFile::addPacketage(const char *data)
             timeNow = clock();
             CString str;
             str.Format("文件已接收 %.1f%%！    用时 %.1fs   平均速度 %.1fk/s", 100.0 * packageRecv / packageNum
-                       , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
+                , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
             pDlg->modifyStatus(str, 0);
         }
     }
@@ -76,7 +74,8 @@ void RecvFile::saveFile(int useTime)
             pDlg->modifyStatus("文件已接收完毕！" + timeMsg, 0);
             pDlg->pSock->updateEvent("文件\"" + fileNewName + "\"已接收完毕！" + timeMsg, "系统通知");
             MessageBox(hWnd, "接收并保存文件成功", "温馨提示", 0);
-        } else {
+        }
+        else {
             pDlg->pSock->SendMSG(pDlg->pSock->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], "", "", pDlg->fileUser), 0);
             pDlg->pSock->updateEvent("接收或保存文件\"" + fileNewName + "\"失败，请稍后再试！（错误代码：0x00041)", "系统通知");
             MessageBox(hWnd, "接收或保存文件失败，请稍后再试！（错误代码：0x00041)", "温馨提示", 0);
@@ -87,15 +86,11 @@ void RecvFile::saveFile(int useTime)
     recvEnd();
 }
 
-CClientSocket::CClientSocket(CString _user)
+CClientSocket::CClientSocket(const CString &_user) : userID(_user)
 {
     pDlg = (CmfcClient1Dlg*)theApp.GetMainWnd();
     hWnd = pDlg->GetSafeHwnd();
-    userID = _user;
 }
-
-CClientSocket::~CClientSocket()
-{}
 
 void CClientSocket::updateEvent(CString showMsg, CString from, bool reset, int timeFMT)
 {
@@ -106,20 +101,21 @@ void CClientSocket::updateEvent(CString showMsg, CString from, bool reset, int t
     if (str == "" && timeFMT == 2) //消息为空则显示日期和时间
         timeFMT = 1;
     switch (timeFMT) {
-    case 1:
-        sysMsg = from + "  " + time.Format(_T("%Y/%m/%d %H:%M:%S  "));
-        break;
-    case 2:
-        sysMsg = from + "  " + time.Format(_T("%H:%M:%S  "));
-        break;
-    case 3:
-        sysMsg = from == "" ? from : from + "  ";
-    default:
-        break;
+        case 1:
+            sysMsg = from + "  " + time.Format(_T("%Y/%m/%d %H:%M:%S  "));
+            break;
+        case 2:
+            sysMsg = from + "  " + time.Format(_T("%H:%M:%S  "));
+            break;
+        case 3:
+            sysMsg = from == "" ? from : from + "  ";
+        default:
+            break;
     }
     if (str != "" && reset) {
         str = "—————————————以上是历史消息—————————————\r\n";
-    } else {
+    }
+    else {
         if (showMsg != "")
             str = sysMsg + showMsg + "\r\n";
     }
@@ -160,13 +156,13 @@ void CClientSocket::OnReceive(int nErrorCode)
     if (msg.type == TYPE[Server_is_closed]) {
         sprintf_s(pDlg->nd.szTip, "客户端：%s - 离线", (LPCTSTR)userID);
         Shell_NotifyIcon(NIM_MODIFY, &pDlg->nd);
-        if (pDlg->m_connect) {    // 如果已经连接，则断开服务器
+        if (pDlg->m_connected) {    // 如果已经连接，则断开服务器
             pDlg->KillTimer(2);
             if (pDlg->rf.isRecving()) {
                 pDlg->pSock->SendMSG(msg.join(TYPE[File_Fail], TYPE[AskFileData], pDlg->fileUser), 0);
                 pDlg->rf.recvEnd();
             }
-            pDlg->m_connect = false;
+            pDlg->m_connected = false;
             pDlg->pSock->Close();
             pDlg->pSock = NULL;
             pDlg->m_ConPC.SetWindowText(_T("连接服务器"));
@@ -180,27 +176,30 @@ void CClientSocket::OnReceive(int nErrorCode)
         pDlg->firstCon = 1;
         pDlg->SetTimer(4, 2000, 0);
     }
-    elif(msg.userId == userID) { //给自己的消息
+    elif(msg.userId == userID)
+    { //给自己的消息
         if (pDlg->logining) {	//正在登陆则把前一次的连接断开
             pDlg->pSock->SendMSG(msg.join("", TYPE[Logout], "", "", "", pDlg->m_pw), 0);
-        } else {
+        }
+        else {
             //MessageBox(0,msg.data,"",0);
             if (msg.type == TYPE[ChatMsg]) {
                 updateEvent(msg.data, "[" + msg.fromUser + "]:");
                 pDlg->modifyStatus("收到[" + msg.fromUser + "]的新消息！");
             }
-            elif(msg.type == TYPE[UserList]) {	//收到了用户列表，则表示登录成功
+            elif(msg.type == TYPE[UserList])
+            {	//收到了用户列表，则表示登录成功
                 pDlg->userNum = 0;
                 pDlg->m_cbMsgTo.ResetContent();
                 int i = msg.data.Find(";");
                 CString newUser;
                 do {
                     newUser = msg.data.Left(i);
-                    if (newUser != userID) {	//把除自己以外的用户添加到用户列表
+                    if (newUser != userID) { //把除自己以外的用户添加到用户列表
                         pDlg->m_cbMsgTo.AddString(newUser);
                         pDlg->userNum++;
                     }
-                    msg.data = rightN(msg.data, i + 1);//msg.data.Right(msg.GetLength()-i-1);
+                    msg.data = MyMsg::rightN(msg.data, i + 1);//msg.data.Right(msg.GetLength()-i-1);
                     i = msg.data.Find(";");
                 } while (i != -1);
                 pDlg->m_cbMsgTo.AddString("服务器");
@@ -210,7 +209,8 @@ void CClientSocket::OnReceive(int nErrorCode)
                 if (pDlg->m_msgTo == "服务器" || pDlg->m_msgTo == "公共聊天室") {
                     pDlg->modifyStatus("已连接到服务器. 你可以向[" + pDlg->m_msgTo + "]自由发送消息");
                     pDlg->to_isOnline = 1;
-                } else
+                }
+                else
                     SendMSG(msg.join(pDlg->m_msgTo, TYPE[OnlineState], "", "", "服务器"), 0);
                 updateEvent(msg.data, "", 1);
                 pDlg->KillTimer(0);
@@ -221,34 +221,39 @@ void CClientSocket::OnReceive(int nErrorCode)
                 pDlg->GetDlgItem(IDC_msgTo)->EnableWindow(1);
                 sprintf_s(pDlg->nd.szTip, "客户端：%s - 在线", (LPCTSTR)userID);	//状态在登陆判重时用到
                 Shell_NotifyIcon(NIM_MODIFY, &pDlg->nd);
-                pDlg->m_connect = true;
+                pDlg->m_connected = true;
                 pDlg->m_ConPC.SetWindowText(_T("断开服务器"));
                 pDlg->UpdateData(false);
             }
-            elif(msg.type == TYPE[OnlineState]) {
+            elif(msg.type == TYPE[OnlineState])
+            {
                 CString sel;
                 pDlg->GetDlgItemText(IDC_msgTo, sel);
                 if (msg.data == "1") {
                     pDlg->modifyStatus("[" + sel + "]当前在线");
                     pDlg->to_isOnline = 1;
-                } else if (msg.data == "0") {
+                }
+                else if (msg.data == "0") {
                     pDlg->modifyStatus("[" + sel + "]当前不在线");
                     pDlg->to_isOnline = 0;
                 }
             }
-            elif(msg.type == TYPE[FileSend]) {
+            elif(msg.type == TYPE[FileSend])
+            {
                 //这里可以接受服务器发给自己的文件请求
                 pDlg->SetForegroundWindow();
                 fileSend(msg);
             }
-            elif(msg.type == TYPE[FileData]) {
+            elif(msg.type == TYPE[FileData])
+            {
                 if (pDlg->rf.isRecving()) {
                     pDlg->KillTimer(2);
                     pDlg->rf.addPacketage(msg.data);
                     pDlg->SetTimer(2, pDlg->fileTimeOut, 0);
                 }
             }
-            elif(msg.type == TYPE[AskFileData]) {
+            elif(msg.type == TYPE[AskFileData])
+            {
                 static fstream dataTrans;
                 static int saveTrans = atoi(AfxGetApp()->GetProfileString("ClientSetting", "saveTransLog", "-1"));//保存传输日志
                 if (saveTrans == -1) {
@@ -260,10 +265,12 @@ void CClientSocket::OnReceive(int nErrorCode)
                 else if (msg.data == TYPE[File_Over]) {
                     updateEvent("[" + msg.fromUser + "]已接收文件：“" + pDlg->fileSendName + "”", "[" + msg.fromUser + "]");
                     if (saveTrans) dataTrans.close();
-                } else if (msg.data == TYPE[File_Fail]) {
+                }
+                else if (msg.data == TYPE[File_Fail]) {
                     updateEvent("[" + msg.fromUser + "]未能成功接收文件：“" + pDlg->fileSendName + "”", "[" + msg.fromUser + "]");
                     if (saveTrans) dataTrans.close();
-                } else {			//请求发送数据包
+                }
+                else {			//请求发送数据包
                     int dataIndex = atoi(msg.data);
                     while (0 == dataIndex && pDlg->readFileEnd == 0) {
                         Sleep(10);
@@ -292,7 +299,8 @@ void CClientSocket::OnReceive(int nErrorCode)
                     }
                 }
             }
-            elif(msg.type == TYPE[LoginFail]) {
+            elif(msg.type == TYPE[LoginFail])
+            {
                 //用户验证失败
                 if (!pDlg->logining) {	//没有在登录才进行这些操作，正在登录则不接收该消息
                     pDlg->KillTimer(0);
@@ -302,18 +310,21 @@ void CClientSocket::OnReceive(int nErrorCode)
                     pDlg->ShowWindow(SW_SHOW);
                 }
             }
-            elif(msg.type == TYPE[UserIsOnline]) {
+            elif(msg.type == TYPE[UserIsOnline])
+            {
                 //用户已经在线
-                if (0==strstr(pDlg->nd.szTip, "在线")) {//拒绝正在登陆的用户
+                if (0 == strstr(pDlg->nd.szTip, "在线")) {//拒绝正在登陆的用户
                     pDlg->KillTimer(0);
                     MessageBox(hWnd, "该用户已经在线,请勿重复登陆！", "登陆失败", 0);
                     pDlg->ShowWindow(SW_HIDE);
                     pDlg->login();
                     pDlg->ShowWindow(SW_SHOW);
-                } else
+                }
+                else
                     MessageBox(hWnd, "你的账号在另一处登陆，如果不是你本人操作，请及时修改密码！", "安全提示", 0);
             }
-            elif(msg.type == TYPE[OfflineMsg]) {	//离线消息
+            elif(msg.type == TYPE[OfflineMsg])
+            {	//离线消息
                 static MyMsg olmsg;
                 CString tmpMsg(msg.data);
                 do {
@@ -323,23 +334,27 @@ void CClientSocket::OnReceive(int nErrorCode)
                 updateEvent("—————————————以上是离线消息—————————————", "", 0, 3);
                 pDlg->modifyStatus("收到离线消息！");
             }
-            elif(msg.type == TYPE[Status]) { //修改状态
+            elif(msg.type == TYPE[Status])
+            { //修改状态
                 pDlg->modifyStatus(msg.data);
             }
         }
     }
-    elif(msg.userId == TYPE[AllUser]) {	//发给所有用户的
+    elif(msg.userId == TYPE[AllUser])
+    {	//发给所有用户的
         if (msg.type == TYPE[ChatMsg]) {
             if (msg.fromUser != ("聊天室-" + userID)) { //过滤自己收到来自自己的消息
                 updateEvent(msg.data, "[" + msg.fromUser + "]:");
                 pDlg->modifyStatus("收到[" + msg.fromUser + "]的新消息！");
             }
         }
-        elif(msg.type == TYPE[AddUserList]) {
+        elif(msg.type == TYPE[AddUserList])
+        {
             pDlg->m_cbMsgTo.InsertString(pDlg->m_cbMsgTo.GetCount() - 2, msg.data);
             pDlg->userNum++;
         }
-        elif(msg.type == TYPE[FileSend]) { //这里可以接受服务器群发的文件请求
+        elif(msg.type == TYPE[FileSend])
+        { //这里可以接受服务器群发的文件请求
             pDlg->SetForegroundWindow();
             fileSend(msg);
         }
@@ -358,12 +373,13 @@ void CClientSocket::SendMSG(CString send, bool upEvent)
         CString err = getLastErrorStr();
         if (tmp_msg.type != TYPE[I_am_online]) {
             MessageBox(hWnd, "发送失败：" + err, "温馨提示", 0);
-        } else {
+        }
+        else {
             pDlg->KillTimer(1);
             sprintf_s(pDlg->nd.szTip, "客户端：%s - 离线", (LPCTSTR)userID);
             Shell_NotifyIcon(NIM_MODIFY, &pDlg->nd);
-            if (pDlg->m_connect) {    // 如果已经连接，则断开服务器
-                pDlg->m_connect = false;
+            if (pDlg->m_connected) {    // 如果已经连接，则断开服务器
+                pDlg->m_connected = false;
                 pDlg->pSock->Close();
                 pDlg->pSock = NULL;
                 pDlg->m_ConPC.SetWindowText(_T("连接服务器"));
@@ -406,9 +422,9 @@ void CClientSocket::fileSend(MyMsg& msg)
 {
     int i = msg.data.Find('|');
     CString name = msg.data.Left(i);
-    CString size = rightN(msg.data, i + 1);
+    CString size = MyMsg::rightN(msg.data, i + 1);
     i = size.Find('|');
-    CString fileMD5 = rightN(size, i + 1);
+    CString fileMD5 = MyMsg::rightN(size, i + 1);
     size = size.Left(i);
     int fileSize = atoi(size);
     if (fileSize > 1024 * 1024)
@@ -419,12 +435,12 @@ void CClientSocket::fileSend(MyMsg& msg)
         size.Format("%d 字节", fileSize);
     if (pDlg->rf.isRecving()) {
         MessageBox(hWnd, '[' + msg.fromUser + "] 给你发来文件：\n文件名：" + name + "\n文件大小：" + size +
-                   "\n当前正在接收文件，请等待当前文件接收完再接收其他文件或终止当前文件接收", "温馨提示", 0);
+            "\n当前正在接收文件，请等待当前文件接收完再接收其他文件或终止当前文件接收", "温馨提示", 0);
         return;
     }
     GET_WRITE(pDlg->fileTimeOut, "fileTimeOut", "2000");
     if (MessageBox(hWnd, '[' + msg.fromUser + "] 给你发来文件：\n文件名：" + name + "\n文件大小：" + size + "\n是否同意接收？",
-                   "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+        "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
         CString fmt = "*" + name.Right(name.GetLength() - name.ReverseFind('.'));
         CFileDialog dlg(false, 0, name, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, fmt + "|" + fmt + "|All Files(*.*)|*.*||");
         if (dlg.DoModal() == IDOK) {
@@ -433,9 +449,11 @@ void CClientSocket::fileSend(MyMsg& msg)
             pDlg->rf.init(dlg.GetPathName(), fileSize, fileMD5);
             pDlg->SetTimer(2, pDlg->fileTimeOut, 0);
             pDlg->modifyStatus("准备接收文件！");
-        } else
+        }
+        else
             pDlg->pSock->SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], "", "", msg.fromUser), 0);
-    } else
+    }
+    else
         pDlg->pSock->SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], "", "", msg.fromUser), 0);
 }
 
@@ -443,9 +461,9 @@ CString getLastErrorStr()
 {
     LPVOID lpMsgBuf;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER
-                  | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS
-                  , 0, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
-                  , (LPTSTR)&lpMsgBuf, 0, 0);
+        | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS
+        , 0, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT)
+        , (LPTSTR)&lpMsgBuf, 0, 0);
     CString errStr = (LPCTSTR)lpMsgBuf;
     LocalFree(lpMsgBuf);
     return errStr;

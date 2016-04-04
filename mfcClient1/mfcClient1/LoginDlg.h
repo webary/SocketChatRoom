@@ -2,7 +2,7 @@
 #ifndef _LOGINDLG_H_
 #define _LOGINDLG_H_
 
-#include "afxdialogex.h"
+#include <afxdialogex.h>
 
 #define IP_LAN		 "172.27.35.3"
 #define IP_LOCALHOST "127.0.0.1"
