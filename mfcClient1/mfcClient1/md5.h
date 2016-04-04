@@ -1,5 +1,5 @@
-#ifndef __MD5_H__
-#define __MD5_H__
+#ifndef _MD5_H_
+#define _MD5_H_
 
 #define _CRT_SECURE_NO_WARNINGS
 //在编译器中调整模式后才能正确编译通过
@@ -48,4 +48,4 @@ private:
 //全局函数:返回一个字符串str的md5值md5_value
 DLL_EXPORT const char* getStrMd5(char* md5_value, const char* str);
 
-#endif
+#endif //_MD5_H_

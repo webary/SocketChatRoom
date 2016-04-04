@@ -40,7 +40,8 @@ protected:
 };
 
 CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
-{}
+{
+}
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -147,7 +148,8 @@ BOOL CmfcServer1Dlg::OnInitDialog()
             }
             exit(0);
         }
-    } else
+    }
+    else
         exit(0);
 
     CDialogEx::OnInitDialog();
@@ -206,9 +208,11 @@ void CmfcServer1Dlg::OnSysCommand(UINT nID, LPARAM lParam)
     if ((nID & 0xFFF0) == IDM_ABOUTBOX) {
         CAboutDlg dlgAbout;
         dlgAbout.DoModal();
-    } else if (nID == ID__clear) {
+    }
+    else if (nID == ID__clear) {
         OnClearLog();
-    } else {
+    }
+    else {
         CDialogEx::OnSysCommand(nID, lParam);
     }
 }
@@ -234,7 +238,8 @@ void CmfcServer1Dlg::OnPaint()
 
         // 绘制图标
         dc.DrawIcon(x, y, m_hIcon);
-    } else {
+    }
+    else {
         CDialogEx::OnPaint();
     }
 }
@@ -259,8 +264,7 @@ void CmfcServer1Dlg::OnOpenCloseServer()
         UpdateData(false);
         return;
     }
-    listenSocket = new CServerSocket();
-    listenSocket->m_pDlg = this;// 指定对话框为主对话框，不能少了这句
+    listenSocket = new CServerSocket(this);
     UpdateData(true);
     if (!listenSocket->Create(m_port, SOCK_STREAM)) {	// 创建服务器的套接字
         if (!first)
@@ -275,7 +279,7 @@ void CmfcServer1Dlg::OnOpenCloseServer()
     setsockopt(*listenSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&nSize, sizeof(int));
     ////禁止Nagle算法（其通过将未确认的数据存入缓冲区直到蓄足一个包一起发送的方法，来减少主机发送的零碎小数据包的数目）
     bool b_noDely = 1;
-    setsockopt( *listenSocket, SOL_SOCKET, TCP_NODELAY, ( char * )&b_noDely, sizeof( b_noDely ) );
+    setsockopt(*listenSocket, SOL_SOCKET, TCP_NODELAY, (char *)&b_noDely, sizeof(b_noDely));
     if (!listenSocket->Listen(UserNumMax)) {
         CString err;
         err.Format("错误代码：%d", GetLastError());
@@ -298,8 +302,7 @@ void CmfcServer1Dlg::OnOpenCloseServer()
 //用于增加用户，响应用户请求。
 void CmfcServer1Dlg::AddClient()
 {
-    CServerSocket* pSocket = new CServerSocket;
-    pSocket->m_pDlg = this;
+    CServerSocket* pSocket = new CServerSocket(this);
     listenSocket->Accept(*pSocket);
     pSocket->AsyncSelect(FD_READ | FD_WRITE | FD_CLOSE);
 }
@@ -328,7 +331,8 @@ int CmfcServer1Dlg::UserInfoValid(bool CheckOnline, bool onlyUser, CString check
                     return i;
                 else
                     return -1;
-            } else
+            }
+            else
                 return i;
         }
     }
@@ -375,16 +379,19 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                     if (msg.userId == "CAPTURE") {
                         SendMSG(msg.join(userList, TYPE[UserList]));
                         UpdateEvent("_CAPUTURE_ come");
-                    } else {
+                    }
+                    else {
                         int re = UserInfoValid();	//验证用户身份
                         if (re != -1) {	//用户名和密码有效
                             if (userInfo[re].Online) {	//该用户已经在线
                                 SendMSG(msg.join("", TYPE[UserIsOnline]));
                                 RemoveClient(msg.userId);
-                            } else if (userInfo[re].refuse) {
+                            }
+                            else if (userInfo[re].refuse) {
                                 UpdateEvent(_T("用户[" + msg.userId + "]请求上线，被拒绝."));
                                 return;
-                            } else {
+                            }
+                            else {
                                 SendMSG(msg.join(userList, TYPE[UserList]));
                                 userInfo[re].Online = 1;
                                 GetOnlineNum();
@@ -408,13 +415,15 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                                     DeleteFile(OLMSG + "//" + msg.userId);
                                 }
                             }
-                        } else {
+                        }
+                        else {
                             SendMSG(msg.join("", TYPE[LoginFail]));
                             RemoveClient(msg.userId);
                         }
                     }
                 }
-                elif(msg.type == TYPE[Logout]) {
+                elif(msg.type == TYPE[Logout])
+                {
                     //用户注销[user]@[pw]###logout
                     if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
                         CServerSocket* pTemp = user_socket[(LPCTSTR)msg.userId];
@@ -430,7 +439,8 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
 
                     }
                 }
-                elif(msg.type == TYPE[Register]) {
+                elif(msg.type == TYPE[Register])
+                {
                     //用户注册[user]@[pw]###register
                     if (UserInfoValid(1, 1) >= 0)	//该用户当前在线，不允许再次注册
                         return;
@@ -438,7 +448,8 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                     if (re >= 0) {					//该用户存在用户列表中但不在线，改写密码
                         strncpy_s(userInfo[re].Pw, msg.pw, 17);
                         UpdateEvent(_T("用户[" + msg.userId + "]修改密码."));
-                    } else {						//该用户不存在，添加到用户列表中
+                    }
+                    else {						//该用户不存在，添加到用户列表中
                         strncpy_s(userInfo[userNum].User, msg.userId, 17);
                         strncpy_s(userInfo[userNum].Pw, msg.pw, 17);
                         userInfo[userNum].Online = userInfo[userNum].refuse = 0;
@@ -465,11 +476,12 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                     if (msg.data == "服务器" || msg.data == "公共聊天室")
                         SendMSG(msg.join("1", TYPE[OnlineState]));
                     elif(isOnline(msg.data))
-                    SendMSG(msg.join("1", TYPE[OnlineState]));
+                        SendMSG(msg.join("1", TYPE[OnlineState]));
                     else
                         SendMSG(msg.join("0", TYPE[OnlineState]));
                 }
-                elif(msg.type == TYPE[ChatMsg]) {
+                elif(msg.type == TYPE[ChatMsg])
+                {
                     if (msg.toUser == "公共聊天室") {
                         SendMSG(msg.join(msg.data, TYPE[ChatMsg], TYPE[AllUser], "聊天室-" + msg.userId));
                         UpdateEvent(msg.data, "用户[" + msg.userId + "]给[聊天室]\t");
@@ -478,7 +490,8 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                     UpdateEvent(msg.data, "用户[" + msg.userId + "]给[" + msg.toUser + "]\t");
                     if (isOnline(msg.toUser)) {
                         SendMSG(msg.join(msg.data, TYPE[ChatMsg], msg.toUser, msg.userId)); // 转发数据给目的用户
-                    } else {
+                    }
+                    else {
                         SendMSG(msg.join("[" + msg.toUser + "]当前不在线，已转为离线消息", TYPE[Status]));// 转为离线消息发送
                         CTime time = CTime::GetCurrentTime();	// 获取系统当前时间
                         ofstream out(OLMSG + "\\" + msg.toUser, ios::out | ios::app);
@@ -486,10 +499,12 @@ void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
                         out.close();
                     }
                 }
-                elif(msg.type == TYPE[I_am_online]) { //心跳机制发送的验证请求
-                    //不做特殊处理
+                elif(msg.type == TYPE[I_am_online])
+                { //心跳机制发送的验证请求
+//不做特殊处理
                 }
-                elif(msg.type == TYPE[FileSend] || msg.type == TYPE[AskFileData] || msg.type == TYPE[FileData]) {
+                elif(msg.type == TYPE[FileSend] || msg.type == TYPE[AskFileData] || msg.type == TYPE[FileData])
+                {
                     fileTransfer(msg, pData);
                 }
             }
@@ -509,7 +524,8 @@ void CmfcServer1Dlg::UpdateEvent(CString str, CString from)
     if (firstEvent) {
         cstr = from + time.Format(_T("%Y/%m/%d %H:%M:%S  ")) + str;	// 格式化当前日期和时间
         firstEvent = 0;
-    } else
+    }
+    else
         cstr = from + time.Format(_T("%H:%M:%S  ")) + str;	// 格式化当前时间
     int lastLine = m_event.LineIndex(m_event.GetLineCount() - 1);//获取编辑框最后一行索引
     m_event.SetSel(lastLine + 1, lastLine + 2, 0);	//选择编辑框最后一行
@@ -531,7 +547,8 @@ void CmfcServer1Dlg::SendMSG(CString str)
     MyMsg msg(str);
     if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
         user_socket[(LPCTSTR)msg.userId]->Send(str, str.GetLength() + 1);
-    } else if (msg.userId != "服务器") { //如果不是单独给某个用户的,就向所有用户发送
+    }
+    else if (msg.userId != "服务器") { //如果不是单独给某个用户的,就向所有用户发送
         for (UserSocket::iterator iter = user_socket.begin(); iter != user_socket.end(); ++iter)
             iter->second->Send(str, str.GetLength() + 1);
     }
@@ -546,13 +563,16 @@ void CmfcServer1Dlg::ControlPC(CString ControlMsg)
     if (ControlMsg == "open kugou") {            //打开播放器
         ShellExecute(NULL, _T("open"), _T("E:\\Program Files\\KuGou\\KuGou.exe"), NULL, NULL, SW_SHOWNORMAL);
         UpdateEvent("用户[" + mymsg.userId + "]请求打开酷狗播放器");
-    } else if (ControlMsg == "open qq") {
+    }
+    else if (ControlMsg == "open qq") {
         ShellExecute(NULL, _T("open"), "E:\\Program Files\\Tencent\\QQ\\Bin\\QQ.exe", NULL, NULL, SW_SHOWNORMAL);
         UpdateEvent("用户[" + mymsg.userId + "]请求打开QQ应用");
-    } else if (ControlMsg == "open chrome") {
+    }
+    else if (ControlMsg == "open chrome") {
         ShellExecute(NULL, _T("open"), "chrome.exe", NULL, NULL, SW_SHOWNORMAL);//C:\\Program Files (x86)\\Google\\Chrome\\Application
         UpdateEvent("用户[" + mymsg.userId + "]请求打开谷歌浏览器");
-    } else if (ControlMsg == "close kugou") {       //关闭播放器
+    }
+    else if (ControlMsg == "close kugou") {       //关闭播放器
         HWND hWnd = ::FindWindow(_T("kugou_ui"), NULL);
         DWORD id_num;
         GetWindowThreadProcessId(hWnd, &id_num);
@@ -571,21 +591,22 @@ LRESULT CmfcServer1Dlg::OnNotifyIconMsg(WPARAM wParam, LPARAM lParam)
 {
     CPoint Point;
     switch (lParam) {
-    case WM_RBUTTONDOWN: { //如果按下鼠标右建
-        CMenu pMenu;//加载菜单
-        if (pMenu.LoadMenu(IDR_MENU1)) {
-            CMenu* pPopup = pMenu.GetSubMenu(0);
-            GetCursorPos(&Point);
-            SetForegroundWindow();
-            pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, Point.x, Point.y, this);
+        case WM_RBUTTONDOWN:
+        { //如果按下鼠标右建
+            CMenu pMenu;//加载菜单
+            if (pMenu.LoadMenu(IDR_MENU1)) {
+                CMenu* pPopup = pMenu.GetSubMenu(0);
+                GetCursorPos(&Point);
+                SetForegroundWindow();
+                pPopup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, Point.x, Point.y, this);
+            }
         }
-    }
-    break;
-    case WM_LBUTTONDOWN:
-        this->ShowWindow(SW_SHOW);
         break;
-    default:
-        break;
+        case WM_LBUTTONDOWN:
+            this->ShowWindow(SW_SHOW);
+            break;
+        default:
+            break;
     }
     return 0;
 }
@@ -675,7 +696,8 @@ void CmfcServer1Dlg::OnDropFiles(HDROP hDropInfo)
         md5.fileMd5(szMD5, filepath);
         s.Format("%s|%ld|%s", name, size, szMD5);
         SendMSG(mymsg.join(s, TYPE[FileSend], TYPE[AllUser], "服务器"));
-    } else
+    }
+    else
         MessageBox("拖入的不是一个有效文件", "温馨提示");
 
     CDialogEx::OnDropFiles(hDropInfo);
@@ -685,7 +707,8 @@ void CmfcServer1Dlg::OnTimer(UINT_PTR nIDEvent)
 {
     if (0 == nIDEvent) {
 
-    } elif(1 == nIDEvent) { //后台读取文件内容并保存
+    } elif(1 == nIDEvent)
+    { //后台读取文件内容并保存
         readFileEnd = 0;
         KillTimer(1);
         memset(packageData, 0, sizeof(packageData));
@@ -695,7 +718,8 @@ void CmfcServer1Dlg::OnTimer(UINT_PTR nIDEvent)
             if (fileSize - readSize > PACKAGE_SIZE) {		//还有完整的包没有读取
                 fileSend.readString(packageData[i], PACKAGE_SIZE);
                 readSize += PACKAGE_SIZE;
-            } else {
+            }
+            else {
                 fileSend.readString(packageData[i], fileSize - readSize);
                 readSize = fileSize;
             }
@@ -704,7 +728,8 @@ void CmfcServer1Dlg::OnTimer(UINT_PTR nIDEvent)
         fileSend.close();
         fileSendName = fileSendName.Right(fileSendName.GetLength() - fileSendName.ReverseFind('\\') - 1);
     }
-    elif(nIDEvent == 2) {	//接收文件监测
+    elif(nIDEvent == 2)
+    {	//接收文件监测
         KillTimer(2);
         if (rf.isRecving()) {
             SendMSG(mymsg.join(TYPE[File_Fail], TYPE[AskFileData], fileUser, "服务器"));
@@ -737,7 +762,7 @@ void CmfcServer1Dlg::fileSend(MyMsg& msg, bool NoAsk/*=0*/)
         return;
     }
     if (NoAsk || MessageBox('[' + msg.userId + "] 给你发来文件：\n文件名：" + name + "\n文件大小：" + size + "\n是否同意接收？",
-                            "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+        "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
         CString fmt = "*" + name.Right(name.GetLength() - name.ReverseFind('.'));
         CFileDialog dlg(false, 0, name, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, fmt + "|" + fmt + "|All Files(*.*)|*.*||");
         if (NoAsk || dlg.DoModal() == IDOK) {
@@ -747,10 +772,12 @@ void CmfcServer1Dlg::fileSend(MyMsg& msg, bool NoAsk/*=0*/)
             CString saveFileAt = NoAsk ? ("CaptureFile\\" + name) : dlg.GetPathName();
             rf.init(saveFileAt, fileSize, fileMD5);
             SetTimer(2, 2000, 0);
-        } else {
+        }
+        else {
             SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
         }
-    } else
+    }
+    else
         SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
 }
 //关于文件的消息,返回1表示处理成功
@@ -767,7 +794,8 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
             SetForegroundWindow();
             fileSend(msg, 1);
         }
-        elif(isOnline(msg.toUser)) {
+        elif(isOnline(msg.toUser))
+        {
             //检查是否在线。若在线，先存到服务器，再转发给该用户
             sft.set(msg.toUser, msg.userId, 0, msg.data);
             fileUser = msg.userId;
@@ -786,7 +814,8 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
             //SendMSG( msg.join(msg.data,msg.type,msg.toUser,msg.userId) );
         }
     }
-    elif(msg.type == TYPE[AskFileData]) {
+    elif(msg.type == TYPE[AskFileData])
+    {
         if (msg.toUser != "服务器") {
             /*//策略1：转发给该用户（经常出现问题）
             if(isOnline(msg.toUser))
@@ -804,11 +833,13 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
             if (msg.data == TYPE[File_NO]) {		//没有拒绝接收文件
                 UpdateEvent("[" + msg.userId + "]拒绝接收文件：" + fileSendName);
             }
-            elif(msg.data == TYPE[File_Over]) {
+            elif(msg.data == TYPE[File_Over])
+            {
                 UpdateEvent("[" + msg.userId + "]已接收文件：" + fileSendName);
                 if (saveTrans) dataTrans.close();
             }
-            elif(msg.data == TYPE[File_Fail]) {
+            elif(msg.data == TYPE[File_Fail])
+            {
                 UpdateEvent("[" + msg.userId + "]未能成功接收文件：" + fileSendName);
                 if (saveTrans) dataTrans.close();
             }
@@ -834,7 +865,8 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
                 sendFileToOthers();
         }
     }
-    elif(msg.type == TYPE[FileData]) {
+    elif(msg.type == TYPE[FileData])
+    {
         //文件数据需要接收
         if (msg.toUser == "服务器") {	//服务器保存数据
             if (rf.isRecving()) {
@@ -842,10 +874,12 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
                 rf.addPacketage(strstr(pData, STR[4]) + 3);
                 SetTimer(2, 2000, 0);
             }
-        } else { //转发给目的用户的数据暂存到服务器
-            //SendMSG( msg.join(strstr(pData,STR[4])+3,msg.type,msg.toUser,msg.userId) );
         }
-    } else {
+        else { //转发给目的用户的数据暂存到服务器
+         //SendMSG( msg.join(strstr(pData,STR[4])+3,msg.type,msg.toUser,msg.userId) );
+        }
+    }
+    else {
         MBox2(msg.type + ":" + msg.data, "unknown");
         return 0;
     }
@@ -871,7 +905,8 @@ void CmfcServer1Dlg::sendFileToOthers(bool first)
                         ++sendAt;
                     }
                 }
-            } else {
+            }
+            else {
                 SendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], sft.fileToUser, "服务器"));
                 sft.fileSendOver = 1;
             }
@@ -907,7 +942,7 @@ void RecvFile::addPacketage(const char *data)
             timeNow = clock();
             CString str;
             str.Format("文件已接收 %.1f%%！    用时 %.1fs   平均速度 %.1fk/s", 100.0 * packageRecv / packageNum
-                       , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
+                , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
             pDlg->modifyStatus(str, 0);
         }
     }
@@ -941,7 +976,8 @@ void RecvFile::saveFile(int useTime)
             clear = 0;
             pDlg->UpdateEvent("接收并保存文件成功", "温馨提示");
             //MessageBox(hWnd,"接收并保存文件成功","温馨提示",0);
-        } else {
+        }
+        else {
             pDlg->SendMSG(pDlg->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], pDlg->fileUser, "服务器"));
             //MessageBox(hWnd,"接收或保存文件失败，请稍后再试！（错误代码：0x00041)","温馨提示",0);
             pDlg->UpdateEvent("接收或保存文件失败，请稍后再试！（错误代码：0x00041)", "温馨提示");

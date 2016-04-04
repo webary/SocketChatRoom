@@ -2,11 +2,7 @@
 #include "resource.h"
 #include "ServerSocket.h"
 
-CServerSocket::CServerSocket(void)
-{
-}
-
-CServerSocket::~CServerSocket(void)
+CServerSocket::CServerSocket(const CmfcServer1Dlg* pDlg) : m_pDlg(pDlg)
 {
 }
 
