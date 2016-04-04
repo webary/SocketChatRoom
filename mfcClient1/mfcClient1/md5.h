@@ -1,5 +1,5 @@
-#ifndef __MD5_H__
-#define __MD5_H__
+#ifndef _MD5_H_
+#define _MD5_H_
 
 //屏蔽vs中针对一些库函数的非必要的安全警告
 #define _CRT_SECURE_NO_WARNINGS
@@ -34,10 +34,10 @@ public:
     bool strMd5 (char *pMd5, const char *str);
 
 private:
-    unsigned long int state[4];		/* state (ABCD) */
-    unsigned long int count[2];		/* number of bits, modulo 2^64 (lsb first) */
-    unsigned char buffer[64];       /* input buffer */
-    unsigned char PADDING[64];		/* What? */
+    unsigned long int state[4];     // state (ABCD)
+    unsigned long int count[2];     // number of bits, modulo 2^64 (lsb first)
+    unsigned char buffer[64];       // input buffer
+    unsigned char PADDING[64];      // What?
 private:
     void MD5Init();
     void MD5Update(unsigned char *input, unsigned int inputLen);
@@ -51,4 +51,4 @@ private:
 //全局函数:返回一个字符串str的md5值md5_value
 DLL_EXPORT const char* getStrMd5(char* md5_value, const char* str);
 
-#endif
+#endif //_MD5_H_
