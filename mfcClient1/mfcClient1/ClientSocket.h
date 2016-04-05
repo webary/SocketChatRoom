@@ -7,28 +7,39 @@
 #define MAX_PACKAGE_NUM (16*1024) //最大数据包数目
 
 #include <afxsock.h>
-#include "CXXFStream.hpp"
-#include "RecvFile.hpp"
 
 #define MBox(s) MessageBox(s,"温馨提示")
 #define MBox2(s1,s2) MessageBox(s1,s2)
 #define elif else if
 #define FOR(ii,start,end) for(ii=start;ii<end;++ii)
 
-extern CString TYPE[30];    //消息类型的定义
+//下面是一些操作ini配置文件的宏操作
+#define GETS(y,z) AfxGetApp()->GetProfileString("ClientSetting",y,z)
+#define WRITE(x,y,z) { char *s = x;if(x==0) s="ClientSetting"; AfxGetApp()->WriteProfileString(s,y,z);}
+//x保存的整型变量，y键码，z键值的默认值
+#define GET_WRITE(x,y,z) {\
+	if((x=atoi(GETS(y,"-1")))==-1){\
+		x = atoi(z);\
+		WRITE(0,y,z);\
+	}\
+}
+
 extern CString STR[5];      //连接消息的各个部分
 
-struct MyMsg { //定义为struct让所有数据成员都公开
+//负责消息解析和封装的类，定义为struct让所有数据成员都公开
+struct MyMsg
+{
     CString userId;     //用户名
     CString pw;         //密码
     CString type;       //消息类型
     CString fromUser;   //消息来自
     CString toUser;     //消息去向
     CString data;       //消息内容
-
+    //返回去除str前n个字符之后的右边剩余的子串
     static CString rightN(CString str, int n) {
         return str.Right(str.GetLength() - n);
     }
+    //载入消息，即解析消息。OLMsg标记是否是离线消息
     CString load(CString str, bool OLMsg = 0) {
         CString tempStr[6] = { "" };
         int index = 0, i;
@@ -55,10 +66,10 @@ struct MyMsg { //定义为struct让所有数据成员都公开
         data = tempStr[index++];
         return str;
     }
+    //连接消息各个部分，即封装消息
     const CString join(CString _data = "", CString _type = "", CString _user = "", CString _from = "", CString _to = "", CString _pw = "") const {
-        if (_user == "") {
+        if (_user == "")
             _user = userId;
-        }
         //用户名+密码+来自+去向+类型+内容
         return _user + STR[0] + _pw + STR[1] + _from + STR[2] + _to + STR[3] + _type + STR[4] + _data;
     }
@@ -69,19 +80,12 @@ class CClientSocket : public CSocket
 {
 public:
     CClientSocket(const CString &_user);
-    virtual void OnReceive(int nErrorCode);// 重写接收函数，通过类向导生成
-
-    void SendMSG(CString send, bool upEvent = 1);// 发送函数，用于发送数据给服务器
-    void updateEvent(CString showMsg, CString from = "服务器:", bool reset = 0, int timeFMT = 2);//更新消息面板
-    void fileSend(MyMsg& msg);  //接收到发送文件的请求时
+    //重写接收函数，通过类向导生成
+    virtual void OnReceive(int nErrorCode);
+    //获取上一个socket错误提示的字符串值
+    static CString getLastErrorStr();
 public:
-    MyMsg mymsg;
-    CString userID; //该用户的用户名
-
-    HWND hWnd;
     CmfcClient1Dlg* pDlg;
 };
-
-CString getLastErrorStr();
 
 #endif //_CLIENTSOCKET_H_

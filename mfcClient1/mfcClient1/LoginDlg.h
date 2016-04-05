@@ -20,14 +20,14 @@ protected:
     virtual BOOL OnInitDialog();
 public:
     bool b_strech;	//是否已展开扩展区
-    CRect m_rc;
+    CRect rc;
     CString userID, pw;
-    CIPAddressCtrl m_IPAddr;
+    CIPAddressCtrl ipAddrCtrl;
     CString ip;
     int port;
 
     bool onlyAlNum(const CString &s);
-    bool dataInvalide();
+    bool isDataInvalide();
     afx_msg void OnOk();
     afx_msg void OnSet();
     afx_msg void OnRegist();

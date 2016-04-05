@@ -2,10 +2,10 @@
 #define _RECVFILE_HPP_
 
 #include <fstream>
-#include <ctime>
-#include <afxdialogex.h> //CString
+#include <afxstr.h> //CString
 
 extern char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1];
+
 class RecvFile
 {
     bool recving;
@@ -36,17 +36,14 @@ public:
         out.close();
     }
     void clearPackData() {
-        for (int i = 0; i < MAX_PACKAGE_NUM; ++i) {
-            strcpy_s(packageData[i], "");
-        }
+        memset(packageData, 0, sizeof(packageData));
     }
-    void recvEnd(bool clear = 1) {
-        //是否清空数据包内容
-        if (packageNum > packageRecv) {    //文件接收失败
+    void recvEnd(bool clear = 1) {  //clear标记是否清空数据包内容
+        if (packageNum > packageRecv) {  //文件接收失败
             DeleteFile(fileNewName);
         }
-        //if(clear)
-        //  clearPackData();
+        if(clear)
+            clearPackData();
         packageNum = packageRecv = 0;
         recving = 0;
     }

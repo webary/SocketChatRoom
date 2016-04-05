@@ -22,7 +22,7 @@ BOOL CChatLogDlg::OnInitDialog()
     //加载该用户的聊天记录
     chatLog = "";
     string _str;
-    ifstream tmpF(myDIR + userID, ios::in);
+    ifstream tmpF(ClientInfo::myDIR + userID, ios::in);
     while (tmpF.is_open() && !tmpF.eof()) {
         getline(tmpF, _str);
         if (_str != "") {
@@ -40,7 +40,7 @@ void CChatLogDlg::OnDelAllLog()
 {
     if (chatLog != "暂时无任何聊天记录"
         && MessageBox("***确认删除所有聊天记录吗？此操作不可撤回！***", "删除确认", MB_YESNO) == IDYES) {
-        DeleteFile(myDIR + userID);
+        DeleteFile(ClientInfo::myDIR + userID);
         MessageBox("已删除所有聊天记录！", "温馨提示");
     } else if (chatLog == "暂时无任何聊天记录") {
         MessageBox("暂时无任何聊天记录", "温馨提示");
@@ -54,7 +54,7 @@ void CChatLogDlg::OnUpdateLog()
 {
     chatLog = "";
     string _str;
-    ifstream tmpF(myDIR + userID, ios::in);
+    ifstream tmpF(ClientInfo::myDIR + userID, ios::in);
     while (!tmpF.eof() && tmpF.is_open()) {
         getline(tmpF, _str);
         if (_str != "")
