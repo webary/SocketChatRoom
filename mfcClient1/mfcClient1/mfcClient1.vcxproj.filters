@@ -39,9 +39,6 @@
     <ClInclude Include="CXXFStream.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="md5.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="RecvFile.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -49,6 +46,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ChatLogDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\MyCode\github\SocketChatRoom\mfcClient1\mfcClient1\md5.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
