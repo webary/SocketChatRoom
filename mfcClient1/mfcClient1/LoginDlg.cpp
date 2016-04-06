@@ -6,7 +6,7 @@
 #include <fstream>
 using namespace std;
 
-extern CString TYPE[30];    //消息类型的定义
+extern const char seperator[3];    //分隔符
 
 BEGIN_MESSAGE_MAP(CLoginDlg, CDialogEx)
     ON_BN_CLICKED(IDOK, &CLoginDlg::OnOk)
@@ -37,10 +37,10 @@ BOOL CLoginDlg::OnInitDialog()
     ipAddrCtrl.SetWindowText(ipAddr);
     b_strech = FALSE;
     CString id_pw = AfxGetApp()->GetProfileString("UserInfo", "userID_pw");
-    int i = id_pw.Find(STR[0]);
+    int i = id_pw.Find(seperator);
     if (i != -1) {
         userID = id_pw.Left(i);
-        pw = id_pw.Right(id_pw.GetLength() - i - 3);
+        pw = id_pw.Right(id_pw.GetLength() - i - 2);
     }
     else {
         char _user[17] = "", _pw[17] = "";
@@ -173,7 +173,7 @@ void CLoginDlg::OnCheckRemPW()
             ofstream user_pw(ClientInfo::myDIR + "user_pw.dat");
             user_pw << userID << "\t" << pw;
             user_pw.close();
-            AfxGetApp()->WriteProfileString("UserInfo", "userID_pw", userID + STR[0] + pw);
+            AfxGetApp()->WriteProfileString("UserInfo", "userID_pw", userID + seperator + pw);
         }
         else {
             DeleteFile(ClientInfo::myDIR + "user_pw.dat");

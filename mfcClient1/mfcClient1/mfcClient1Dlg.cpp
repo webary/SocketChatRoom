@@ -645,7 +645,7 @@ void CmfcClient1Dlg::receData()
             do {
                 tmpMsg = olmsg.load(tmpMsg, 1);
                 updateEvent(olmsg.type + "  " + olmsg.data, "[" + olmsg.fromUser + "]:", 0, 3);
-            } while (tmpMsg.Find(STR[0]) != -1);
+            } while (tmpMsg.Find(seperator) != -1);
             updateEvent("—————————————以上是离线消息—————————————", "", 0, 3);
             modifyStatus("收到离线消息！");
         }

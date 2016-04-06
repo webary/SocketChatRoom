@@ -110,9 +110,6 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="ChatLogDlg.h" />
     <ClInclude Include="ClientSocket.h" />
     <ClInclude Include="CXXFStream.hpp" />
@@ -120,6 +117,7 @@
     <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="mfcClient1.h" />
     <ClInclude Include="mfcClient1Dlg.h" />
+    <ClInclude Include="MyMsg.h" />
     <ClInclude Include="RecvFile.hpp" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -131,6 +129,7 @@
     <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="mfcClient1.cpp" />
     <ClCompile Include="mfcClient1Dlg.cpp" />
+    <ClCompile Include="MyMsg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

@@ -45,14 +45,14 @@ CmfcServer1Dlg::CmfcServer1Dlg(CWnd* pParent /*=NULL*/)
     userNum = 0;
     userList = "";
     while (!src.eof()) {
-        src >> userInfo[userNum].User >> userInfo[userNum].Pw;
-        if (0 == userInfo[userNum].User[0] || 0 == userInfo[userNum].Pw[0])
+        src >> userInfo[userNum].userName >> userInfo[userNum].pwd;
+        if (0 == userInfo[userNum].userName[0] || 0 == userInfo[userNum].pwd[0])
             break;
-        userInfo[userNum].Online = userInfo[userNum].refuse = 0;
-        userList += userInfo[userNum].User;
+        userInfo[userNum].isOnline = userInfo[userNum].isRefused = 0;
+        userList += userInfo[userNum].userName;
         userList += ";";
-        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].User), CFile::modeCreate | CFile::modeNoTruncate);
-        CreateFile(userInfo[userNum].User, 0, 0, 0, 0, 0, 0);
+        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].userName), CFile::modeCreate | CFile::modeNoTruncate);
+        CreateFile(userInfo[userNum].userName, 0, 0, 0, 0, 0, 0);
         userNum++;
     }
     src.close();
@@ -378,7 +378,7 @@ void CmfcServer1Dlg::OnOpenCloseServer()
 {
     static bool first = 1;
     for (int i = 0; i < userNum; ++i)
-        userInfo[i].Online = 0;
+        userInfo[i].isOnline = 0;
     getOnlineUserNums();
     if (m_connect) { //如果已连接则关闭服务器
         sendCloseMsg();
@@ -433,7 +433,7 @@ void CmfcServer1Dlg::addClient()
 //用于移除某个用户,即让其下线
 void CmfcServer1Dlg::removeClient(const CString _user)
 {
-    UserSocket::iterator iter = user_socket.find((LPCTSTR)_user);
+    auto iter = user_socket.find((LPCTSTR)_user);
     if (iter != user_socket.end()) {
         CServerSocket* pSockItem = user_socket[(LPCTSTR)_user];
         user_socket.erase(iter);
@@ -448,9 +448,9 @@ int CmfcServer1Dlg::isUserInfoValid(bool CheckOnline, bool onlyUser, CString che
     if (checkUser == "")
         checkUser = mymsg.userId;
     for (int i = 0; i < userNum; ++i) {
-        if (checkUser == userInfo[i].User && (onlyUser || mymsg.pw == userInfo[i].Pw)) {	//找到该用户的信息
+        if (checkUser == userInfo[i].userName && (onlyUser || mymsg.pw == userInfo[i].pwd)) {	//找到该用户的信息
             if (CheckOnline) {	//检查是否在线
-                if (userInfo[i].Online)
+                if (userInfo[i].isOnline)
                     return i;
                 else
                     return -1;
@@ -468,8 +468,8 @@ bool CmfcServer1Dlg::isUserOnline(CString _user)
     if (_user == "服务器" || _user == "公共聊天室" || _user == TYPE[AllUser])
         return 1;
     for (int i = 0; i < userNum && i < UserNumMax; ++i) {
-        if (userInfo[i].User == _user) {
-            if (userInfo[i].Online)
+        if (userInfo[i].userName == _user) {
+            if (userInfo[i].isOnline)
                 return 1;
             else
                 return 0;
@@ -507,30 +507,28 @@ void CmfcServer1Dlg::receData(CServerSocket* pSocket)
                     else {
                         int re = isUserInfoValid();	//验证用户身份
                         if (re != -1) {	//用户名和密码有效
-                            if (userInfo[re].Online) {	//该用户已经在线
+                            if (userInfo[re].isOnline) {	//该用户已经在线
                                 sendMSG(msg.join("", TYPE[UserIsOnline]));
                                 removeClient(msg.userId);
                             }
-                            else if (userInfo[re].refuse) {
+                            else if (userInfo[re].isRefused) {
                                 updateEvent(_T("用户[" + msg.userId + "]请求上线，被拒绝."));
                                 return;
                             }
                             else {
                                 sendMSG(msg.join(userList, TYPE[UserList]));
-                                userInfo[re].Online = 1;
+                                userInfo[re].isOnline = 1;
                                 getOnlineUserNums();
                                 UpdateData(false);
                                 CString ss;
                                 ss.Format("%u", m_userOnlineCount);
                                 updateEvent(_T("用户[" + msg.userId + "]上线. 在线用户数：" + ss));
-                                char olMsg[1024];
                                 string _str;
-                                CString Msg;		//将离线消息内容
-                                ifstream in(OLMSG + "//" + msg.userId, ios::in);
+                                CString Msg; //保存可能存在的离线消息内容
+                                ifstream in(OLMSG + "//" + msg.userId);
                                 while (!in.eof() && in.is_open()) {
                                     getline(in, _str);
-                                    strncpy_s(olMsg, _str.c_str(), 1024);
-                                    Msg += olMsg;
+                                    Msg += _str.c_str();
                                 }
                                 in.close();
                                 if (Msg != "") {
@@ -556,7 +554,7 @@ void CmfcServer1Dlg::receData(CServerSocket* pSocket)
                         user_socket.erase(user_socket.find((LPCTSTR)msg.userId));
                         int re = isUserInfoValid();
                         if (re >= 0)
-                            userInfo[re].Online = 0;	//在线状态改为0
+                            userInfo[re].isOnline = 0;	//在线状态改为0
                         getOnlineUserNums();
                         UpdateData(false);
                         updateEvent(_T("用户[" + msg.userId + "]离开."));
@@ -570,23 +568,23 @@ void CmfcServer1Dlg::receData(CServerSocket* pSocket)
                         return;
                     int re = isUserInfoValid(0, 1);
                     if (re >= 0) {					//该用户存在用户列表中但不在线，改写密码
-                        strncpy_s(userInfo[re].Pw, msg.pw, 17);
+                        strncpy_s(userInfo[re].pwd, msg.pw, 17);
                         updateEvent(_T("用户[" + msg.userId + "]修改密码."));
                     }
                     else {						//该用户不存在，添加到用户列表中
-                        strncpy_s(userInfo[userNum].User, msg.userId, 17);
-                        strncpy_s(userInfo[userNum].Pw, msg.pw, 17);
-                        userInfo[userNum].Online = userInfo[userNum].refuse = 0;
-                        userList += userInfo[userNum].User;
+                        strncpy_s(userInfo[userNum].userName, msg.userId, 17);
+                        strncpy_s(userInfo[userNum].pwd, msg.pw, 17);
+                        userInfo[userNum].isOnline = userInfo[userNum].isRefused = 0;
+                        userList += userInfo[userNum].userName;
                         userList += ";";
-                        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].User), CFile::modeCreate | CFile::modeNoTruncate);
-                        sendMSG(msg.join(userInfo[userNum].User, TYPE[AddUserList], TYPE[AllUser]));
+                        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].userName), CFile::modeCreate | CFile::modeNoTruncate);
+                        sendMSG(msg.join(userInfo[userNum].userName, TYPE[AddUserList], TYPE[AllUser]));
                         userNum++;
                         updateEvent(_T("用户[" + msg.userId + "]注册."));
                     }
                     fstream src(DATASRC, ios::out);	//将新用户列表写入数据源
                     for (int i = 0; i < userNum; ++i)
-                        src << userInfo[i].User << "\t" << userInfo[i].Pw << "\n";
+                        src << userInfo[i].userName << "\t" << userInfo[i].pwd << "\n";
                     src.close();
                 }
                 else {
@@ -612,8 +610,8 @@ void CmfcServer1Dlg::receData(CServerSocket* pSocket)
                         return;
                     }
                     updateEvent(msg.data, "用户[" + msg.userId + "]给[" + msg.toUser + "]\t");
-                    if (isUserOnline(msg.toUser)) {
-                        sendMSG(msg.join(msg.data, TYPE[ChatMsg], msg.toUser, msg.userId)); // 转发数据给目的用户
+                    if (isUserOnline(msg.toUser)) { // 目的用户在线则转发数据给目的用户
+                        sendMSG(msg.join(msg.data, TYPE[ChatMsg], msg.toUser, msg.userId)); 
                     }
                     else {
                         sendMSG(msg.join("[" + msg.toUser + "]当前不在线，已转为离线消息", TYPE[Status]));// 转为离线消息发送
@@ -709,7 +707,7 @@ int CmfcServer1Dlg::getOnlineUserNums()
 {
     m_userOnlineCount = 0;
     for (int i = 0; i < userNum && i < UserNumMax; ++i) {
-        if (userInfo[i].Online != 0)
+        if (userInfo[i].isOnline != 0)
             m_userOnlineCount++;
     }
     return m_userOnlineCount;
@@ -845,16 +843,16 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
         if (msg.toUser == "服务器") {	//服务器保存数据
             if (rf.isRecving()) {
                 KillTimer(2);
-                rf.addPacketage(strstr(pData, STR[4]) + 3);
+                rf.addPacketage(strstr(pData, seperator) + strlen(seperator));
                 SetTimer(2, 2000, 0);
             }
         }
         else { //转发给目的用户的数据暂存到服务器
-         //sendMSG( msg.join(strstr(pData,STR[4])+3,msg.type,msg.toUser,msg.userId) );
+         //sendMSG( msg.join(strstr(pData,STR[4])+strlen(STR[4]),msg.type,msg.toUser,msg.userId) );
         }
     }
     else {
-        MBox2(msg.type + ":" + msg.data, "unknown");
+        MessageBox(msg.type + ":" + msg.data, "unknown");
         return 0;
     }
     return 1;
@@ -871,11 +869,11 @@ void CmfcServer1Dlg::sendFileToOthers(bool first)
         if (isUserOnline(sft.fileToUser)) {
             if (sft.fileToUser == "公共聊天室" || sft.fileToUser == TYPE[AllUser]) {
                 if (sendAt < userNum) { //还没有发送完毕
-                    while (!(userInfo[sendAt].Online) || userInfo[sendAt].User == sft.fileFromUser)
+                    while (!(userInfo[sendAt].isOnline) || userInfo[sendAt].userName == sft.fileFromUser)
                         ++sendAt;
                     if (sendAt < userNum) {
                         Sleep(20);
-                        sendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], userInfo[sendAt].User, sft.fileFromUser));
+                        sendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], userInfo[sendAt].userName, sft.fileFromUser));
                         ++sendAt;
                     }
                 }

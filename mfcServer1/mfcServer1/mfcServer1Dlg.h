@@ -4,12 +4,13 @@
 
 #pragma once
 #include "mfcServer1.h"
-
 #include "ServerSocket.h"
+#include "../../mfcClient1/mfcClient1/MyMsg.h"
 #include "../../mfcClient1/mfcClient1/RecvFile.hpp"
 #include <fstream>
 #include <map>
 
+#define elif else if
 
 #define WM_NOTIFYICONMSG WM_USER+3 //托盘消息
 
@@ -26,50 +27,50 @@ public:
     enum { IDD = IDD_MFCSERVER1_DIALOG };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
-protected:
     HICON m_hIcon;
-    NOTIFYICONDATA nd;  //通知栏图标
 
-    // 生成的消息映射函数
     virtual BOOL OnInitDialog();
     virtual void OnOK();
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     afx_msg void OnPaint();
     afx_msg HCURSOR OnQueryDragIcon();
-public:
-    const static int UserNumMax = 1000; //最大允许有1000个用户
+private:
+    const static int UserNumMax = 100; //允许登录的用户最大数量
     struct _UserInfo {
-        char User[17]; //用户名
-        char Pw[17];   //密码
-        bool Online;   //在线状态
-        bool refuse;   //是否被拒绝登录
+        char userName[17];      //用户名
+        char pwd[17];           //密码
+        bool isOnline;          //在线状态
+        bool isRefused;         //是否被拒绝登录
     } userInfo[UserNumMax];
     typedef std::map<std::string, CServerSocket*> UserSocket;
-    UserSocket user_socket; //保存<用户名,socket>映射关系
-    MyMsg mymsg;
-    int userNum;            //所用已注册用户数
-    CString fileUser;       //与文件传输相关的用户
-    CString userList;       //用户列表,在用户登录时将发给用户
+    UserSocket user_socket;     //保存<用户名,socket>映射关系
+    int userNum;                //所有已注册用户数
+    CString userList;           //用户列表,在用户登录时将发给用户
     CServerSocket* listenSocket;//用于服务器建立监听连接
-    bool m_connect;         //用于标记服务器状态
-    CString fileSendName;   //将要发送的文件的文件名
-    bool readFileEnd;       //标记文件读取是否完成
-    RecvFile rf;            //接收文件对象
+    bool m_connect;             //用于标记服务器状态
+    CString fileSendName;       //将要发送的文件的文件名
+    bool readFileEnd;           //标记文件读取是否完成
+    RecvFile rf;                //接收文件对象
     struct SendFileTo {
         CString fileToUser;     //服务器暂存的文件的目的用户
         CString fileFromUser;   //服务器暂存的文件的来源用户
         bool fileSendOver;      //服务器需要转发的文件是否发送完毕
         CString fileInfo;       //需要发送的文件的信息
-        void set(CString to, CString from, bool over, CString info) {
+        void set(const CString &to, const CString &from, bool over, const CString &info) {
             fileToUser = to;
             fileFromUser = from;
             fileSendOver = over;
             fileInfo = info;
         }
-    } sft;  //服务器转发文件结构
+    } sft;              //服务器转发文件的结构
+    NOTIFYICONDATA nd;  //通知栏图标
 
+public:                 //这两个成员在类外部也需要访问，故设置为公有
+    MyMsg mymsg;
+    CString fileUser;   //与文件传输相关的用户
+
+public:
     void addClient();                       // 增加用户，响应用户请求
     void removeClient(const CString _user); // 移除下线的用户
     void receData(CServerSocket* pSocket);  // 获取数据

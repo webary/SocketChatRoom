@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="mfcClient1.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -51,6 +48,9 @@
     <ClInclude Include="D:\MyCode\github\SocketChatRoom\mfcClient1\mfcClient1\md5.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MyMsg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mfcClient1.cpp">
@@ -69,6 +69,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ChatLogDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MyMsg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

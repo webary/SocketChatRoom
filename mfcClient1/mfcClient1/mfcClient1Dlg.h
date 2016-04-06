@@ -7,7 +7,11 @@
 #include "LoginDlg.h"
 #include "ChatLogDlg.h"
 
+#include "MyMsg.h"
 #include "RecvFile.hpp"
+
+#define elif else if
+#define MBox(s) MessageBox(s,"Œ¬‹∞Ã· æ")
 
 class CmfcClient1Dlg;
 class ClientInfo
