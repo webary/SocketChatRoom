@@ -6,65 +6,14 @@
 #include "mfcServer1.h"
 
 #include "ServerSocket.h"
+#include "../../mfcClient1/mfcClient1/RecvFile.hpp"
 #include <fstream>
 #include <map>
 
-class CServerSocket;
 
 #define WM_NOTIFYICONMSG WM_USER+3 //托盘消息
 
-#define MBox(s) MessageBox(s,"温馨提示")
-#define MBox2(s1,s2) MessageBox(s1,s2)
-#define elif else if
-#define FOR(ii,start,end) for(ii=start;ii<end;++ii)
-
-inline CString rightN(CString str, int n)
-{
-    return str.Right(str.GetLength() - n);
-}
-
-extern CString STR[5];
-struct MyMsg {
-    CString userId;
-    CString pw;
-    CString data;
-    CString type;
-    CString fromUser;
-    CString toUser;
-    explicit MyMsg(CString str = "") {
-        load(str);
-    }
-    CString load(CString str) {
-        CString tempStr[6] = { "" };
-        int index = 0, i;
-        FOR(index, 0, 5) {
-            i = str.Find(STR[index]);
-            tempStr[index] = str.Left(i);
-            str = rightN(str, i + 3);
-            if (str == "")
-                break;
-        }
-        tempStr[5] = str;
-        i = str.Find(STR[0]);
-        if (i != -1)
-            str = rightN(str, i + 3);
-        index = 0;
-        userId = tempStr[index++];
-        pw = tempStr[index++];
-        fromUser = tempStr[index++];
-        toUser = tempStr[index++];
-        type = tempStr[index++];
-        data = tempStr[index++];
-        return str;
-    }
-    const CString join(CString _data = "", CString _type = "", CString _user = "", CString _from = "", CString _to = "", CString _pw = "") const {
-        if (_user == "")
-            _user = userId;
-        //用户名+密码+来自+去向+类型+内容
-        return _user + STR[0] + _pw + STR[1] + _from + STR[2] + _to + STR[3] + _type + STR[4] + _data;
-    }
-};
-// CmfcServer1Dlg 对话框
+class CServerSocket;
 class CmfcServer1Dlg : public CDialogEx
 {
 #define DATASRC CString("UserData.dat")
@@ -85,6 +34,7 @@ protected:
 
     // 生成的消息映射函数
     virtual BOOL OnInitDialog();
+    virtual void OnOK();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     afx_msg void OnPaint();
     afx_msg HCURSOR OnQueryDragIcon();
@@ -120,24 +70,20 @@ public:
         }
     } sft;  //服务器转发文件结构
 
-    void AddClient();                       // 增加用户，响应用户请求
-    void RemoveClient(const CString _user); // 移除下线的用户
-    void ReceData(CServerSocket* pSocket);  // 获取数据
-    void UpdateEvent(CString str, CString from = "服务器\t");// 更新事件日志
-    void SendMSG(CString str);              // 发送消息给各个客户端
-    void ControlPC(CString AndroidControl); // 手机控制PC的响应函数
-    void SendCloseMsg();  // 发送关闭服务器的消息
-    int UserInfoValid(bool CheckOnline = 0, bool onlyUser = 0, CString checkUser = "");  // 验证用户名和密码是否有效
-    int GetOnlineNum();   //得到在线用户数目
-    bool isOnline(CString _user);   //得到用户是否在线，返回序号
+    void addClient();                       // 增加用户，响应用户请求
+    void removeClient(const CString _user); // 移除下线的用户
+    void receData(CServerSocket* pSocket);  // 获取数据
+    void updateEvent(CString str, CString from = "服务器\t");// 更新事件日志
+    void sendMSG(CString str);              // 发送消息给各个客户端
+    void controlPC(CString AndroidControl); // 手机控制PC的响应函数
+    void sendCloseMsg();  // 发送关闭服务器的消息
+    int isUserInfoValid(bool CheckOnline = 0, bool onlyUser = 0, CString checkUser = "");  // 验证用户名和密码是否有效
+    int getOnlineUserNums();   //得到在线用户数目
+    bool isUserOnline(CString _user);   //得到用户是否在线，返回序号
     void fileSend(MyMsg& msg, bool NoAsk = 0);       //收到用户from发来文件的请求
     int fileTransfer(MyMsg& msg, const char* pData); //文件传输
     void modifyStatus(CString sta, bool _sleep = 1); //修改状态栏
     void sendFileToOthers(bool first = 0);  //继续发送文件给其他用户
-
-    virtual void OnOK();
-
-    DECLARE_MESSAGE_MAP()
 
     UINT m_port;
     CEdit m_event;
@@ -152,4 +98,6 @@ public:
     afx_msg void OnClearLog();
     afx_msg void OnDropFiles(HDROP hDropInfo);
     afx_msg void OnTimer(UINT_PTR nIDEvent);
+
+    DECLARE_MESSAGE_MAP()
 };

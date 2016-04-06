@@ -12,10 +12,7 @@
 
 using namespace std;
 
-char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1];	//保存需要发送的文件内容
-
-CString TYPE[30] = { TYPE_ChatMsg , TYPE_Server_is_closed , TYPE_UserList , TYPE_OnlineState , TYPE_FileSend , TYPE_FileData , TYPE_AskFileData , TYPE_File_NO , TYPE_File_Over , TYPE_File_Fail , TYPE_LoginFail , TYPE_UserIsOnline , TYPE_OfflineMsg , TYPE_AllUser , TYPE_AddUserList , TYPE_I_am_online , TYPE_Logout , TYPE_Login , TYPE_Register , TYPE_Status };
-CString STR[5] = { "@@@","<<<",">>>","&&&","###" };//用户名+密码+来自+去向+类型+内容
+char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1];//保存需要发送的文件内容
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -26,30 +23,11 @@ CString STR[5] = { "@@@","<<<",">>>","&&&","###" };//用户名+密码+来自+去向+类型+
 class CAboutDlg : public CDialogEx
 {
 public:
-    CAboutDlg();
+    CAboutDlg() : CDialogEx(CAboutDlg::IDD)
+    { }
 
-    // 对话框数据
     enum { IDD = IDD_ABOUTBOX };
-
-protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
-// 实现
-protected:
-    DECLARE_MESSAGE_MAP()
 };
-
-CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
-{
-}
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-    CDialogEx::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
-END_MESSAGE_MAP()
 
 
 // CmfcServer1Dlg 对话框
@@ -78,7 +56,7 @@ CmfcServer1Dlg::CmfcServer1Dlg(CWnd* pParent /*=NULL*/)
         userNum++;
     }
     src.close();
-    GetOnlineNum();
+    getOnlineUserNums();
     m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);//(IDR_MAINFRAME);
     DeleteFile("ServerMsg.txt");
     sft.fileSendOver = 1;	//默认没有需要转发的文件
@@ -96,23 +74,21 @@ void CmfcServer1Dlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT2, m_event);
 }
 
-#pragma region MessageMap
 BEGIN_MESSAGE_MAP(CmfcServer1Dlg, CDialogEx)
     ON_WM_SYSCOMMAND()
     ON_WM_PAINT()
     ON_WM_QUERYDRAGICON()
-    ON_BN_CLICKED(IDC_OpenCloseServer, &CmfcServer1Dlg::OnOpenCloseServer)
-    ON_MESSAGE(WM_NOTIFYICONMSG, OnNotifyIconMsg)
-    ON_COMMAND(ID_hide, &CmfcServer1Dlg::OnHide)
-    ON_COMMAND(ID_exit, &CmfcServer1Dlg::OnExit)
-    ON_COMMAND(ID_show, &CmfcServer1Dlg::OnShow)
     ON_WM_CLOSE()
     ON_WM_DROPFILES()
     ON_WM_TIMER()
+    ON_BN_CLICKED(IDC_OpenCloseServer, OnOpenCloseServer)
+    ON_MESSAGE(WM_NOTIFYICONMSG, OnNotifyIconMsg)
+    ON_COMMAND(ID_hide, OnHide)
+    ON_COMMAND(ID_exit, OnExit)
+    ON_COMMAND(ID_show, OnShow)
 END_MESSAGE_MAP()
-#pragma endregion
 
-//获得外网IP,在本项目发布版本中并未用到
+//获得外网IP,在本项目发布版本中暂未用到
 #include <afxinet.h>
 void GetOutIP()
 {
@@ -217,10 +193,6 @@ void CmfcServer1Dlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
 }
 
-// 如果向对话框添加最小化按钮，则需要下面的代码
-//  来绘制该图标。对于使用文档/视图模型的 MFC 应用程序，
-//  这将由框架自动完成。
-
 void CmfcServer1Dlg::OnPaint()
 {
     if (IsIconic()) {
@@ -244,348 +216,17 @@ void CmfcServer1Dlg::OnPaint()
     }
 }
 
-//当用户拖动最小化窗口时系统调用此函数取得光标
-//显示。
 HCURSOR CmfcServer1Dlg::OnQueryDragIcon()
 {
     return static_cast<HCURSOR>(m_hIcon);
 }
 
-void CmfcServer1Dlg::OnOpenCloseServer()
-{
-    static bool first = 1;
-    for (int i = 0; i < userNum; ++i)
-        userInfo[i].Online = 0;
-    GetOnlineNum();
-    if (m_connect) { //如果已连接则关闭服务器
-        SendCloseMsg();
-        sprintf_s(nd.szTip, "服务器 - 已关闭");	//修改通知栏图标显示文字
-        Shell_NotifyIcon(NIM_MODIFY, &nd);
-        UpdateData(false);
-        return;
-    }
-    listenSocket = new CServerSocket(this);
-    UpdateData(true);
-    if (!listenSocket->Create(m_port, SOCK_STREAM)) {	// 创建服务器的套接字
-        if (!first)
-            AfxMessageBox("创建套接字错误！");
-        first = 0;
-        listenSocket->Close();
-        return;
-    }
-    //在发送数据的时，不执行由系统缓冲区到socket缓冲区的拷贝，以提高程序的性能
-    int nSize = DATA_BUF_SIZE;//设置缓冲区大小
-    setsockopt(*listenSocket, SOL_SOCKET, SO_SNDBUF, (const char*)&nSize, sizeof(int));
-    setsockopt(*listenSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&nSize, sizeof(int));
-    ////禁止Nagle算法（其通过将未确认的数据存入缓冲区直到蓄足一个包一起发送的方法，来减少主机发送的零碎小数据包的数目）
-    bool b_noDely = 1;
-    setsockopt(*listenSocket, SOL_SOCKET, TCP_NODELAY, (char *)&b_noDely, sizeof(b_noDely));
-    if (!listenSocket->Listen(UserNumMax)) {
-        CString err;
-        err.Format("错误代码：%d", GetLastError());
-        if (!first)
-            AfxMessageBox("监听失败！" + err);
-        first = 0;
-        listenSocket->Close();
-        return;
-    }
-    first = 0;
-    m_connect = true;
-    GetDlgItem(IDC_PortId)->EnableWindow(0);
-    UpdateData(false);
-    SetDlgItemText(IDC_OpenCloseServer, "关闭服务器");
-    UpdateEvent("服务器已打开.");
-    sprintf_s(nd.szTip, "服务器 - 已打开\r\n端口号：%u", m_port);
-    Shell_NotifyIcon(NIM_MODIFY, &nd);
-}
-
-//用于增加用户，响应用户请求。
-void CmfcServer1Dlg::AddClient()
-{
-    CServerSocket* pSocket = new CServerSocket(this);
-    listenSocket->Accept(*pSocket);
-    pSocket->AsyncSelect(FD_READ | FD_WRITE | FD_CLOSE);
-}
-
-//用于移除下线的用户
-void CmfcServer1Dlg::RemoveClient(const CString _user)
-{
-    UserSocket::iterator iter = user_socket.find((LPCTSTR)_user);
-    if (iter != user_socket.end()) {
-        CServerSocket* pSockItem = user_socket[(LPCTSTR)_user];
-        user_socket.erase(iter);
-        pSockItem->Close();
-        delete pSockItem;
-    }
-}
-
-// 验证用户名和密码是否有效,CheckOnline为1时表示检查在线状态,onlyUser为1时表示只检查该用户是否存在,不验证密码
-int CmfcServer1Dlg::UserInfoValid(bool CheckOnline, bool onlyUser, CString checkUser)
-{
-    if (checkUser == "")
-        checkUser = mymsg.userId;
-    for (int i = 0; i < userNum; ++i) {
-        if (checkUser == userInfo[i].User && (onlyUser || mymsg.pw == userInfo[i].Pw)) {	//找到该用户的信息
-            if (CheckOnline) {	//检查是否在线
-                if (userInfo[i].Online)
-                    return i;
-                else
-                    return -1;
-            }
-            else
-                return i;
-        }
-    }
-    return -1;
-}
-
-bool CmfcServer1Dlg::isOnline(CString _user)
-{
-    if (_user == "服务器" || _user == "公共聊天室" || _user == TYPE[AllUser])
-        return 1;
-    for (int i = 0; i < userNum && i < UserNumMax; ++i) {
-        if (userInfo[i].User == _user) {
-            if (userInfo[i].Online)
-                return 1;
-            else
-                return 0;
-        }
-    }
-    return 0;
-}
-
-//用于获取数据
-void CmfcServer1Dlg::ReceData(CServerSocket* pSocket)
-{
-    static char pData[DATA_BUF_SIZE];	//保存接收到的数据
-    memset(pData, 0, sizeof(pData));
-    static int saveMsg = atoi(AfxGetApp()->GetProfileString("ServerSetting", "saveMsgLog", "-1"));//保存传输日志
-    if (saveMsg == -1) {
-        AfxGetApp()->WriteProfileString("ServerSetting", "saveMsgLog", "0");
-        saveMsg = 0;
-    }
-    static ofstream save_MSG("ServerMsg.txt");	//保存消息记录的文件
-    if (pSocket->Receive(pData, DATA_BUF_SIZE) != SOCKET_ERROR) {
-        ///MessageBox(pData, "服务器接收");
-        mymsg.load(pData);
-        MyMsg msg = mymsg;
-        if (saveMsg == 1 && msg.type != TYPE[I_am_online]) //如果不是心跳包消息则保存该条记录
-            save_MSG << pData << endl;
-        if (msg.userId != "") {
-            user_socket[(LPCTSTR)msg.userId] = pSocket; //存储该用户的socket
-#pragma region "密码不为空:登录、注销、注册"
-            if (msg.pw != "") { //密码不为空
-                if (msg.type == TYPE[Login]) {
-                    if (msg.userId == "CAPTURE") {
-                        SendMSG(msg.join(userList, TYPE[UserList]));
-                        UpdateEvent("_CAPUTURE_ come");
-                    }
-                    else {
-                        int re = UserInfoValid();	//验证用户身份
-                        if (re != -1) {	//用户名和密码有效
-                            if (userInfo[re].Online) {	//该用户已经在线
-                                SendMSG(msg.join("", TYPE[UserIsOnline]));
-                                RemoveClient(msg.userId);
-                            }
-                            else if (userInfo[re].refuse) {
-                                UpdateEvent(_T("用户[" + msg.userId + "]请求上线，被拒绝."));
-                                return;
-                            }
-                            else {
-                                SendMSG(msg.join(userList, TYPE[UserList]));
-                                userInfo[re].Online = 1;
-                                GetOnlineNum();
-                                UpdateData(false);
-                                CString ss;
-                                ss.Format("%u", m_userOnlineCount);
-                                UpdateEvent(_T("用户[" + msg.userId + "]上线. 在线用户数：" + ss));
-                                char olMsg[1024];
-                                string _str;
-                                CString Msg;		//将离线消息内容
-                                ifstream in(OLMSG + "//" + msg.userId, ios::in);
-                                while (!in.eof() && in.is_open()) {
-                                    getline(in, _str);
-                                    strncpy_s(olMsg, _str.c_str(), 1024);
-                                    Msg += olMsg;
-                                }
-                                in.close();
-                                if (Msg != "") {
-                                    Sleep(100);
-                                    SendMSG(msg.join(Msg, TYPE[OfflineMsg]));
-                                    DeleteFile(OLMSG + "//" + msg.userId);
-                                }
-                            }
-                        }
-                        else {
-                            SendMSG(msg.join("", TYPE[LoginFail]));
-                            RemoveClient(msg.userId);
-                        }
-                    }
-                }
-                elif(msg.type == TYPE[Logout])
-                {
-                    //用户注销[user]@[pw]###logout
-                    if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
-                        CServerSocket* pTemp = user_socket[(LPCTSTR)msg.userId];
-                        pTemp->Close();
-                        delete pTemp;
-                        user_socket.erase(user_socket.find((LPCTSTR)msg.userId));
-                        int re = UserInfoValid();
-                        if (re >= 0)
-                            userInfo[re].Online = 0;	//在线状态改为0
-                        GetOnlineNum();
-                        UpdateData(false);
-                        UpdateEvent(_T("用户[" + msg.userId + "]离开."));
-
-                    }
-                }
-                elif(msg.type == TYPE[Register])
-                {
-                    //用户注册[user]@[pw]###register
-                    if (UserInfoValid(1, 1) >= 0)	//该用户当前在线，不允许再次注册
-                        return;
-                    int re = UserInfoValid(0, 1);
-                    if (re >= 0) {					//该用户存在用户列表中但不在线，改写密码
-                        strncpy_s(userInfo[re].Pw, msg.pw, 17);
-                        UpdateEvent(_T("用户[" + msg.userId + "]修改密码."));
-                    }
-                    else {						//该用户不存在，添加到用户列表中
-                        strncpy_s(userInfo[userNum].User, msg.userId, 17);
-                        strncpy_s(userInfo[userNum].Pw, msg.pw, 17);
-                        userInfo[userNum].Online = userInfo[userNum].refuse = 0;
-                        userList += userInfo[userNum].User;
-                        userList += ";";
-                        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].User), CFile::modeCreate | CFile::modeNoTruncate);
-                        SendMSG(msg.join(userInfo[userNum].User, TYPE[AddUserList], TYPE[AllUser]));
-                        userNum++;
-                        UpdateEvent(_T("用户[" + msg.userId + "]注册."));
-                    }
-                    fstream src(DATASRC, ios::out);	//将新用户列表写入数据源
-                    for (int i = 0; i < userNum; ++i)
-                        src << userInfo[i].User << "\t" << userInfo[i].Pw << "\n";
-                    src.close();
-                }
-                else {
-                    //MessageBox("消息处理失败，包含未知通知——"+msg,"温馨提示");
-                    UpdateEvent("包含未知消息类型:" + msg.type);
-                }
-            }
-#pragma endregion
-            else { //没有密码部分
-                if (msg.type == TYPE[OnlineState]) {
-                    if (msg.data == "服务器" || msg.data == "公共聊天室")
-                        SendMSG(msg.join("1", TYPE[OnlineState]));
-                    elif(isOnline(msg.data))
-                        SendMSG(msg.join("1", TYPE[OnlineState]));
-                    else
-                        SendMSG(msg.join("0", TYPE[OnlineState]));
-                }
-                elif(msg.type == TYPE[ChatMsg])
-                {
-                    if (msg.toUser == "公共聊天室") {
-                        SendMSG(msg.join(msg.data, TYPE[ChatMsg], TYPE[AllUser], "聊天室-" + msg.userId));
-                        UpdateEvent(msg.data, "用户[" + msg.userId + "]给[聊天室]\t");
-                        return;
-                    }
-                    UpdateEvent(msg.data, "用户[" + msg.userId + "]给[" + msg.toUser + "]\t");
-                    if (isOnline(msg.toUser)) {
-                        SendMSG(msg.join(msg.data, TYPE[ChatMsg], msg.toUser, msg.userId)); // 转发数据给目的用户
-                    }
-                    else {
-                        SendMSG(msg.join("[" + msg.toUser + "]当前不在线，已转为离线消息", TYPE[Status]));// 转为离线消息发送
-                        CTime time = CTime::GetCurrentTime();	// 获取系统当前时间
-                        ofstream out(OLMSG + "\\" + msg.toUser, ios::out | ios::app);
-                        out << msg.join(msg.data, time.Format("%m-%d %H:%M:%S"), "$", msg.userId) << endl;
-                        out.close();
-                    }
-                }
-                elif(msg.type == TYPE[I_am_online])
-                { //心跳机制发送的验证请求
-//不做特殊处理
-                }
-                elif(msg.type == TYPE[FileSend] || msg.type == TYPE[AskFileData] || msg.type == TYPE[FileData])
-                {
-                    fileTransfer(msg, pData);
-                }
-            }
-            return;
-        }
-        UpdateEvent(pData, "unknown\t");
-    }
-}
-//用于更新事件日志
-//说明：本函数在所有需要更新日志的地方都有调用，方便服务器记录用户的登录和退出事件
-void CmfcServer1Dlg::UpdateEvent(CString str, CString from)
-{
-    static bool firstEvent = 1;
-    CString cstr;
-    CTime time = CTime::GetCurrentTime();	// 获取系统当前时间
-    str += _T("\r\n");		// 用于换行显示日志
-    if (firstEvent) {
-        cstr = from + time.Format(_T("%Y/%m/%d %H:%M:%S  ")) + str;	// 格式化当前日期和时间
-        firstEvent = 0;
-    }
-    else
-        cstr = from + time.Format(_T("%H:%M:%S  ")) + str;	// 格式化当前时间
-    int lastLine = m_event.LineIndex(m_event.GetLineCount() - 1);//获取编辑框最后一行索引
-    m_event.SetSel(lastLine + 1, lastLine + 2, 0);	//选择编辑框最后一行
-    m_event.ReplaceSel(cstr);                     //替换所选那一行的内容
-    ofstream history("history.txt", ios::out | ios::app);
-    history << cstr.GetBuffer();
-    history.close();
-    GetDlgItemText(IDC_EDIT2, cstr);
-    if (cstr.GetLength() > 10000) {
-        cstr = cstr.Right(1000);
-        m_event.SetSel(lastLine + 1, lastLine + 2, 0);	//选择编辑框最后一行
-        m_event.ReplaceSel(cstr);
-    }
-}
-
-//用于发送消息给某个客户端
-void CmfcServer1Dlg::SendMSG(CString str)
-{
-    MyMsg msg(str);
-    if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
-        user_socket[(LPCTSTR)msg.userId]->Send(str, str.GetLength() + 1);
-    }
-    else if (msg.userId != "服务器") { //如果不是单独给某个用户的,就向所有用户发送
-        for (UserSocket::iterator iter = user_socket.begin(); iter != user_socket.end(); ++iter)
-            iter->second->Send(str, str.GetLength() + 1);
-    }
-}
-
-/*	编写ControlPC函数，用于处理接收到的指令并控制电脑。
-    说明：控制功能可以自己随意添加，这里只以音乐播放为例进行说明，ShellExecute
-    函数用于调用其他应用程序，关闭进程比较麻烦一点，这里先获取应用程序窗口的ID，
-    通过OpenProcess和TerminateProcess终止进程。*/
-void CmfcServer1Dlg::ControlPC(CString ControlMsg)
-{
-    if (ControlMsg == "open kugou") {            //打开播放器
-        ShellExecute(NULL, _T("open"), _T("E:\\Program Files\\KuGou\\KuGou.exe"), NULL, NULL, SW_SHOWNORMAL);
-        UpdateEvent("用户[" + mymsg.userId + "]请求打开酷狗播放器");
-    }
-    else if (ControlMsg == "open qq") {
-        ShellExecute(NULL, _T("open"), "E:\\Program Files\\Tencent\\QQ\\Bin\\QQ.exe", NULL, NULL, SW_SHOWNORMAL);
-        UpdateEvent("用户[" + mymsg.userId + "]请求打开QQ应用");
-    }
-    else if (ControlMsg == "open chrome") {
-        ShellExecute(NULL, _T("open"), "chrome.exe", NULL, NULL, SW_SHOWNORMAL);//C:\\Program Files (x86)\\Google\\Chrome\\Application
-        UpdateEvent("用户[" + mymsg.userId + "]请求打开谷歌浏览器");
-    }
-    else if (ControlMsg == "close kugou") {       //关闭播放器
-        HWND hWnd = ::FindWindow(_T("kugou_ui"), NULL);
-        DWORD id_num;
-        GetWindowThreadProcessId(hWnd, &id_num);
-        HANDLE hd = OpenProcess(PROCESS_ALL_ACCESS, FALSE, id_num);
-        TerminateProcess(hd, 0);
-        UpdateEvent("用户[" + mymsg.userId + "]请求关闭酷狗播放器");
-    }
-}
 //确认按钮的响应函数
 void CmfcServer1Dlg::OnOK()
 {
     OnOpenCloseServer();
 }
+
 //处理托盘消息
 LRESULT CmfcServer1Dlg::OnNotifyIconMsg(WPARAM wParam, LPARAM lParam)
 {
@@ -618,7 +259,7 @@ void CmfcServer1Dlg::OnHide()
 
 void CmfcServer1Dlg::OnExit()
 {
-    SendCloseMsg();
+    sendCloseMsg();
     this->PostMessage(WM_CLOSE);
 }
 
@@ -630,7 +271,7 @@ void CmfcServer1Dlg::OnShow()
 
 void CmfcServer1Dlg::OnClose()
 {
-    SendCloseMsg();
+    sendCloseMsg();
     CString str;
     GetDlgItem(IDC_EDIT2)->GetWindowText(str);
     ofstream history("history.txt", ios::out | ios::app);
@@ -640,10 +281,10 @@ void CmfcServer1Dlg::OnClose()
     CDialogEx::OnClose();
 }
 // 发送关闭服务器的消息
-void CmfcServer1Dlg::SendCloseMsg()
+void CmfcServer1Dlg::sendCloseMsg()
 {
     if (m_connect) {
-        SendMSG(mymsg.join("", TYPE[Server_is_closed], TYPE[AllUser]));
+        sendMSG(mymsg.join("", TYPE[Server_is_closed], TYPE[AllUser]));
         listenSocket->Close();
         delete listenSocket;
         listenSocket = NULL;
@@ -652,23 +293,13 @@ void CmfcServer1Dlg::SendCloseMsg()
         SetDlgItemText(IDC_userC, _T("0"));
         GetDlgItem(IDC_PortId)->EnableWindow(1);	//使控件可以修改
         SetDlgItemText(IDC_OpenCloseServer, _T("打开服务器"));
-        UpdateEvent(_T("服务器已关闭."));
+        updateEvent(_T("服务器已关闭."));
     }
 }
 
 void CmfcServer1Dlg::OnClearLog()
 {
     SetDlgItemText(IDC_EDIT2, _T(""));
-}
-
-int CmfcServer1Dlg::GetOnlineNum()
-{
-    m_userOnlineCount = 0;
-    for (int i = 0; i < userNum && i < UserNumMax; ++i) {
-        if (userInfo[i].Online != 0)
-            m_userOnlineCount++;
-    }
-    return m_userOnlineCount;
 }
 
 void CmfcServer1Dlg::OnDropFiles(HDROP hDropInfo)
@@ -695,7 +326,7 @@ void CmfcServer1Dlg::OnDropFiles(HDROP hDropInfo)
         char szMD5[33] = "";
         md5.fileMd5(szMD5, filepath);
         s.Format("%s|%ld|%s", name, size, szMD5);
-        SendMSG(mymsg.join(s, TYPE[FileSend], TYPE[AllUser], "服务器"));
+        sendMSG(mymsg.join(s, TYPE[FileSend], TYPE[AllUser], "服务器"));
     }
     else
         MessageBox("拖入的不是一个有效文件", "温馨提示");
@@ -732,8 +363,8 @@ void CmfcServer1Dlg::OnTimer(UINT_PTR nIDEvent)
     {	//接收文件监测
         KillTimer(2);
         if (rf.isRecving()) {
-            SendMSG(mymsg.join(TYPE[File_Fail], TYPE[AskFileData], fileUser, "服务器"));
-            UpdateEvent("接收文件超时，请稍后再试！", "温馨提示");
+            sendMSG(mymsg.join(TYPE[File_Fail], TYPE[AskFileData], fileUser, "服务器"));
+            updateEvent("接收文件超时，请稍后再试！", "温馨提示");
             //::MessageBox(GetSafeHwnd(),"接收文件超时，请稍后再试！","温馨提示",0);
             modifyStatus("文件接收超时", 0);
             rf.recvEnd();
@@ -742,13 +373,355 @@ void CmfcServer1Dlg::OnTimer(UINT_PTR nIDEvent)
     CDialog::OnTimer(nIDEvent);
 }
 
+//打开/关闭服务器
+void CmfcServer1Dlg::OnOpenCloseServer()
+{
+    static bool first = 1;
+    for (int i = 0; i < userNum; ++i)
+        userInfo[i].Online = 0;
+    getOnlineUserNums();
+    if (m_connect) { //如果已连接则关闭服务器
+        sendCloseMsg();
+        sprintf_s(nd.szTip, "服务器 - 已关闭");	//修改通知栏图标显示文字
+        Shell_NotifyIcon(NIM_MODIFY, &nd);
+        UpdateData(false);
+        return;
+    }
+    listenSocket = new CServerSocket(this);
+    UpdateData(true);
+    if (!listenSocket->Create(m_port, SOCK_STREAM)) {	// 创建服务器的套接字
+        if (!first)
+            AfxMessageBox("创建套接字错误！");
+        first = 0;
+        listenSocket->Close();
+        return;
+    }
+    //在发送数据的时，不执行由系统缓冲区到socket缓冲区的拷贝，以提高程序的性能
+    int nSize = DATA_BUF_SIZE;//设置缓冲区大小
+    setsockopt(*listenSocket, SOL_SOCKET, SO_SNDBUF, (const char*)&nSize, sizeof(int));
+    setsockopt(*listenSocket, SOL_SOCKET, SO_RCVBUF, (const char*)&nSize, sizeof(int));
+    ////禁止Nagle算法（其通过将未确认的数据存入缓冲区直到蓄足一个包一起发送的方法，来减少主机发送的零碎小数据包的数目）
+    bool b_noDely = 1;
+    setsockopt(*listenSocket, SOL_SOCKET, TCP_NODELAY, (char *)&b_noDely, sizeof(b_noDely));
+    if (!listenSocket->Listen(UserNumMax)) {
+        CString err;
+        err.Format("错误代码：%d", GetLastError());
+        if (!first)
+            AfxMessageBox("监听失败！" + err);
+        first = 0;
+        listenSocket->Close();
+        return;
+    }
+    first = 0;
+    m_connect = true;
+    GetDlgItem(IDC_PortId)->EnableWindow(0);
+    UpdateData(false);
+    SetDlgItemText(IDC_OpenCloseServer, "关闭服务器");
+    updateEvent("服务器已打开.");
+    sprintf_s(nd.szTip, "服务器 - 已打开\r\n端口号：%u", m_port);
+    Shell_NotifyIcon(NIM_MODIFY, &nd);
+}
+
+//用于增加用户，响应用户请求。
+void CmfcServer1Dlg::addClient()
+{
+    CServerSocket* pSocket = new CServerSocket(this);
+    listenSocket->Accept(*pSocket);
+    pSocket->AsyncSelect(FD_READ | FD_WRITE | FD_CLOSE);
+}
+
+//用于移除某个用户,即让其下线
+void CmfcServer1Dlg::removeClient(const CString _user)
+{
+    UserSocket::iterator iter = user_socket.find((LPCTSTR)_user);
+    if (iter != user_socket.end()) {
+        CServerSocket* pSockItem = user_socket[(LPCTSTR)_user];
+        user_socket.erase(iter);
+        pSockItem->Close();
+        delete pSockItem;
+    }
+}
+
+// 验证用户名和密码是否有效,CheckOnline为1时表示检查在线状态,onlyUser为1时表示只检查该用户是否存在,不验证密码
+int CmfcServer1Dlg::isUserInfoValid(bool CheckOnline, bool onlyUser, CString checkUser)
+{
+    if (checkUser == "")
+        checkUser = mymsg.userId;
+    for (int i = 0; i < userNum; ++i) {
+        if (checkUser == userInfo[i].User && (onlyUser || mymsg.pw == userInfo[i].Pw)) {	//找到该用户的信息
+            if (CheckOnline) {	//检查是否在线
+                if (userInfo[i].Online)
+                    return i;
+                else
+                    return -1;
+            }
+            else
+                return i;
+        }
+    }
+    return -1;
+}
+
+//检查某个用户是否在线
+bool CmfcServer1Dlg::isUserOnline(CString _user)
+{
+    if (_user == "服务器" || _user == "公共聊天室" || _user == TYPE[AllUser])
+        return 1;
+    for (int i = 0; i < userNum && i < UserNumMax; ++i) {
+        if (userInfo[i].User == _user) {
+            if (userInfo[i].Online)
+                return 1;
+            else
+                return 0;
+        }
+    }
+    return 0;
+}
+
+//用于获取数据
+void CmfcServer1Dlg::receData(CServerSocket* pSocket)
+{
+    static char pData[DATA_BUF_SIZE];	//保存接收到的数据
+    memset(pData, 0, sizeof(pData));
+    static int saveMsg = atoi(AfxGetApp()->GetProfileString("ServerSetting", "saveMsgLog", "-1"));//保存传输日志
+    if (saveMsg == -1) {
+        AfxGetApp()->WriteProfileString("ServerSetting", "saveMsgLog", "0");
+        saveMsg = 0;
+    }
+    static ofstream save_MSG("ServerMsg.txt");	//保存消息记录的文件
+    if (pSocket->Receive(pData, DATA_BUF_SIZE) != SOCKET_ERROR) {
+        ///MessageBox(pData, "服务器接收");
+        mymsg.load(pData);
+        MyMsg msg = mymsg;
+        if (saveMsg == 1 && msg.type != TYPE[I_am_online]) //如果不是心跳包消息则保存该条记录
+            save_MSG << pData << endl;
+        if (msg.userId != "") {
+            user_socket[(LPCTSTR)msg.userId] = pSocket; //存储该用户的socket
+#pragma region "密码不为空:登录、注销、注册"
+            if (msg.pw != "") { //密码不为空
+                if (msg.type == TYPE[Login]) {
+                    if (msg.userId == "CAPTURE") {
+                        sendMSG(msg.join(userList, TYPE[UserList]));
+                        updateEvent("_CAPUTURE_ come");
+                    }
+                    else {
+                        int re = isUserInfoValid();	//验证用户身份
+                        if (re != -1) {	//用户名和密码有效
+                            if (userInfo[re].Online) {	//该用户已经在线
+                                sendMSG(msg.join("", TYPE[UserIsOnline]));
+                                removeClient(msg.userId);
+                            }
+                            else if (userInfo[re].refuse) {
+                                updateEvent(_T("用户[" + msg.userId + "]请求上线，被拒绝."));
+                                return;
+                            }
+                            else {
+                                sendMSG(msg.join(userList, TYPE[UserList]));
+                                userInfo[re].Online = 1;
+                                getOnlineUserNums();
+                                UpdateData(false);
+                                CString ss;
+                                ss.Format("%u", m_userOnlineCount);
+                                updateEvent(_T("用户[" + msg.userId + "]上线. 在线用户数：" + ss));
+                                char olMsg[1024];
+                                string _str;
+                                CString Msg;		//将离线消息内容
+                                ifstream in(OLMSG + "//" + msg.userId, ios::in);
+                                while (!in.eof() && in.is_open()) {
+                                    getline(in, _str);
+                                    strncpy_s(olMsg, _str.c_str(), 1024);
+                                    Msg += olMsg;
+                                }
+                                in.close();
+                                if (Msg != "") {
+                                    Sleep(100);
+                                    sendMSG(msg.join(Msg, TYPE[OfflineMsg]));
+                                    DeleteFile(OLMSG + "//" + msg.userId);
+                                }
+                            }
+                        }
+                        else {
+                            sendMSG(msg.join("", TYPE[LoginFail]));
+                            removeClient(msg.userId);
+                        }
+                    }
+                }
+                elif(msg.type == TYPE[Logout])
+                {
+                    //用户注销[user]@[pw]###logout
+                    if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
+                        CServerSocket* pTemp = user_socket[(LPCTSTR)msg.userId];
+                        pTemp->Close();
+                        delete pTemp;
+                        user_socket.erase(user_socket.find((LPCTSTR)msg.userId));
+                        int re = isUserInfoValid();
+                        if (re >= 0)
+                            userInfo[re].Online = 0;	//在线状态改为0
+                        getOnlineUserNums();
+                        UpdateData(false);
+                        updateEvent(_T("用户[" + msg.userId + "]离开."));
+
+                    }
+                }
+                elif(msg.type == TYPE[Register])
+                {
+                    //用户注册[user]@[pw]###register
+                    if (isUserInfoValid(1, 1) >= 0)	//该用户当前在线，不允许再次注册
+                        return;
+                    int re = isUserInfoValid(0, 1);
+                    if (re >= 0) {					//该用户存在用户列表中但不在线，改写密码
+                        strncpy_s(userInfo[re].Pw, msg.pw, 17);
+                        updateEvent(_T("用户[" + msg.userId + "]修改密码."));
+                    }
+                    else {						//该用户不存在，添加到用户列表中
+                        strncpy_s(userInfo[userNum].User, msg.userId, 17);
+                        strncpy_s(userInfo[userNum].Pw, msg.pw, 17);
+                        userInfo[userNum].Online = userInfo[userNum].refuse = 0;
+                        userList += userInfo[userNum].User;
+                        userList += ";";
+                        CStdioFile(OLMSG + "//" + CString(userInfo[userNum].User), CFile::modeCreate | CFile::modeNoTruncate);
+                        sendMSG(msg.join(userInfo[userNum].User, TYPE[AddUserList], TYPE[AllUser]));
+                        userNum++;
+                        updateEvent(_T("用户[" + msg.userId + "]注册."));
+                    }
+                    fstream src(DATASRC, ios::out);	//将新用户列表写入数据源
+                    for (int i = 0; i < userNum; ++i)
+                        src << userInfo[i].User << "\t" << userInfo[i].Pw << "\n";
+                    src.close();
+                }
+                else {
+                    //MessageBox("消息处理失败，包含未知通知——"+msg,"温馨提示");
+                    updateEvent("包含未知消息类型:" + msg.type);
+                }
+            }
+#pragma endregion
+            else { //没有密码部分
+                if (msg.type == TYPE[OnlineState]) {
+                    if (msg.data == "服务器" || msg.data == "公共聊天室")
+                        sendMSG(msg.join("1", TYPE[OnlineState]));
+                    elif(isUserOnline(msg.data))
+                        sendMSG(msg.join("1", TYPE[OnlineState]));
+                    else
+                        sendMSG(msg.join("0", TYPE[OnlineState]));
+                }
+                elif(msg.type == TYPE[ChatMsg])
+                {
+                    if (msg.toUser == "公共聊天室") {
+                        sendMSG(msg.join(msg.data, TYPE[ChatMsg], TYPE[AllUser], "聊天室-" + msg.userId));
+                        updateEvent(msg.data, "用户[" + msg.userId + "]给[聊天室]\t");
+                        return;
+                    }
+                    updateEvent(msg.data, "用户[" + msg.userId + "]给[" + msg.toUser + "]\t");
+                    if (isUserOnline(msg.toUser)) {
+                        sendMSG(msg.join(msg.data, TYPE[ChatMsg], msg.toUser, msg.userId)); // 转发数据给目的用户
+                    }
+                    else {
+                        sendMSG(msg.join("[" + msg.toUser + "]当前不在线，已转为离线消息", TYPE[Status]));// 转为离线消息发送
+                        CTime time = CTime::GetCurrentTime();	// 获取系统当前时间
+                        ofstream out(OLMSG + "\\" + msg.toUser, ios::out | ios::app);
+                        out << msg.join(msg.data, time.Format("%m-%d %H:%M:%S"), "$", msg.userId) << endl;
+                        out.close();
+                    }
+                }
+                elif(msg.type == TYPE[I_am_online])
+                { //心跳机制发送的验证请求
+                  //不做特殊处理
+                }
+                elif(msg.type == TYPE[FileSend] || msg.type == TYPE[AskFileData] || msg.type == TYPE[FileData])
+                {
+                    fileTransfer(msg, pData);
+                }
+            }
+            return;
+        }
+        updateEvent(pData, "unknown\t");
+    }
+}
+
+//用于更新事件日志，本函数在所有需要更新日志的地方都有调用，方便服务器记录用户的登录和退出事件
+void CmfcServer1Dlg::updateEvent(CString str, CString from)
+{
+    static bool firstEvent = 1;
+    CString cstr;
+    CTime time = CTime::GetCurrentTime();	// 获取系统当前时间
+    str += _T("\r\n");		// 用于换行显示日志
+    if (firstEvent) {
+        cstr = from + time.Format(_T("%Y/%m/%d %H:%M:%S  ")) + str;	// 格式化当前日期和时间
+        firstEvent = 0;
+    }
+    else
+        cstr = from + time.Format(_T("%H:%M:%S  ")) + str;	// 格式化当前时间
+    int lastLine = m_event.LineIndex(m_event.GetLineCount() - 1);//获取编辑框最后一行索引
+    m_event.SetSel(lastLine + 1, lastLine + 2, 0);	//选择编辑框最后一行
+    m_event.ReplaceSel(cstr);                     //替换所选那一行的内容
+    ofstream history("history.txt", ios::out | ios::app);
+    history << cstr.GetBuffer();
+    history.close();
+    GetDlgItemText(IDC_EDIT2, cstr);
+    if (cstr.GetLength() > 10000) {
+        cstr = cstr.Right(1000);
+        m_event.SetSel(lastLine + 1, lastLine + 2, 0);	//选择编辑框最后一行
+        m_event.ReplaceSel(cstr);
+    }
+}
+
+//用于发送消息给某个客户端
+void CmfcServer1Dlg::sendMSG(CString str)
+{
+    MyMsg msg(str);
+    if (user_socket.find((LPCTSTR)msg.userId) != user_socket.end()) {
+        user_socket[(LPCTSTR)msg.userId]->Send(str, str.GetLength() + 1);
+    }
+    else if (msg.userId != "服务器") { //如果不是单独给某个用户的,就向所有用户发送
+        for (auto & elem : user_socket)
+            elem.second->Send(str, str.GetLength() + 1);
+        //for (UserSocket::iterator iter = user_socket.begin(); iter != user_socket.end(); ++iter)
+        //    iter->second->Send(str, str.GetLength() + 1);
+    }
+}
+
+//用于处理接收到的指令并控制电脑。
+void CmfcServer1Dlg::controlPC(CString ControlMsg)
+{
+    if (ControlMsg == "open kugou") {            //打开播放器
+        ShellExecute(NULL, _T("open"), _T("E:\\Program Files\\KuGou\\KuGou.exe"), NULL, NULL, SW_SHOWNORMAL);
+        updateEvent("用户[" + mymsg.userId + "]请求打开酷狗播放器");
+    }
+    else if (ControlMsg == "open qq") {
+        ShellExecute(NULL, _T("open"), "E:\\Program Files\\Tencent\\QQ\\Bin\\QQ.exe", NULL, NULL, SW_SHOWNORMAL);
+        updateEvent("用户[" + mymsg.userId + "]请求打开QQ应用");
+    }
+    else if (ControlMsg == "open chrome") {
+        ShellExecute(NULL, _T("open"), "chrome.exe", NULL, NULL, SW_SHOWNORMAL);//C:\\Program Files (x86)\\Google\\Chrome\\Application
+        updateEvent("用户[" + mymsg.userId + "]请求打开谷歌浏览器");
+    }
+    else if (ControlMsg == "close kugou") {       //关闭播放器
+        HWND hWnd = ::FindWindow(_T("kugou_ui"), NULL);
+        DWORD id_num;
+        GetWindowThreadProcessId(hWnd, &id_num);
+        HANDLE hd = OpenProcess(PROCESS_ALL_ACCESS, FALSE, id_num);
+        TerminateProcess(hd, 0);
+        updateEvent("用户[" + mymsg.userId + "]请求关闭酷狗播放器");
+    }
+}
+
+int CmfcServer1Dlg::getOnlineUserNums()
+{
+    m_userOnlineCount = 0;
+    for (int i = 0; i < userNum && i < UserNumMax; ++i) {
+        if (userInfo[i].Online != 0)
+            m_userOnlineCount++;
+    }
+    return m_userOnlineCount;
+}
+
 void CmfcServer1Dlg::fileSend(MyMsg& msg, bool NoAsk/*=0*/)
 {
     int i = msg.data.Find('|');
     CString name = msg.data.Left(i);
-    CString size = rightN(msg.data, i + 1);
+    CString size = MyMsg::rightN(msg.data, i + 1);
     i = size.Find('|');
-    CString fileMD5 = rightN(size, i + 1);
+    CString fileMD5 = MyMsg::rightN(size, i + 1);
     size = size.Left(i);
     int fileSize = atoi(size);
     if (fileSize > 1024 * 1024)
@@ -762,24 +735,25 @@ void CmfcServer1Dlg::fileSend(MyMsg& msg, bool NoAsk/*=0*/)
         return;
     }
     if (NoAsk || MessageBox('[' + msg.userId + "] 给你发来文件：\n文件名：" + name + "\n文件大小：" + size + "\n是否同意接收？",
-        "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
+                            "温馨提示", MB_YESNO | MB_ICONQUESTION) == IDYES) {
         CString fmt = "*" + name.Right(name.GetLength() - name.ReverseFind('.'));
         CFileDialog dlg(false, 0, name, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, fmt + "|" + fmt + "|All Files(*.*)|*.*||");
         if (NoAsk || dlg.DoModal() == IDOK) {
             fileUser = msg.userId;
-            SendMSG(msg.join("0", TYPE[AskFileData], msg.userId, "服务器"));
+            sendMSG(msg.join("0", TYPE[AskFileData], msg.userId, "服务器"));
             CreateDirectory("CaptureFile", 0);
             CString saveFileAt = NoAsk ? ("CaptureFile\\" + name) : dlg.GetPathName();
             rf.init(saveFileAt, fileSize, fileMD5);
             SetTimer(2, 2000, 0);
         }
         else {
-            SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
+            sendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
         }
     }
     else
-        SendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
+        sendMSG(msg.join(TYPE[File_NO], TYPE[AskFileData], msg.userId, "服务器"));
 }
+
 //关于文件的消息,返回1表示处理成功
 int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
 {
@@ -794,34 +768,34 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
             SetForegroundWindow();
             fileSend(msg, 1);
         }
-        elif(isOnline(msg.toUser))
+        elif(isUserOnline(msg.toUser))
         {
             //检查是否在线。若在线，先存到服务器，再转发给该用户
             sft.set(msg.toUser, msg.userId, 0, msg.data);
             fileUser = msg.userId;
             int i = msg.data.Find('|');
             CString name = msg.data.Left(i);
-            CString size = rightN(msg.data, i + 1);
+            CString size = MyMsg::rightN(msg.data, i + 1);
             i = size.Find('|');
-            CString fileMD5 = rightN(size, i + 1);
+            CString fileMD5 = MyMsg::rightN(size, i + 1);
             size = size.Left(i);
             //Sleep(20);
-            SendMSG(msg.join("0", TYPE[AskFileData], msg.userId, "服务器"));
+            sendMSG(msg.join("0", TYPE[AskFileData], msg.userId, "服务器"));
             CreateDirectory("ServerFile", 0);
             rf.init("ServerFile\\" + name, atoi(size), fileMD5);
             SetTimer(2, 2000, 0);
             fileSendName = name;
-            //SendMSG( msg.join(msg.data,msg.type,msg.toUser,msg.userId) );
+            //sendMSG( msg.join(msg.data,msg.type,msg.toUser,msg.userId) );
         }
     }
     elif(msg.type == TYPE[AskFileData])
     {
         if (msg.toUser != "服务器") {
             /*//策略1：转发给该用户（经常出现问题）
-            if(isOnline(msg.toUser))
+            if(isUserOnline(msg.toUser))
             {
             Sleep(10);
-            SendMSG( msg.join(msg.data,msg.type,msg.toUser,msg.userId) );
+            sendMSG( msg.join(msg.data,msg.type,msg.toUser,msg.userId) );
             }*/
             //策略2：文件数据已先保存到服务器，现在发送给该用户
             if (msg.toUser == sft.fileFromUser) {
@@ -831,16 +805,16 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
         if (msg.toUser == "服务器") { //发给服务器
             static fstream dataTrans;
             if (msg.data == TYPE[File_NO]) {		//没有拒绝接收文件
-                UpdateEvent("[" + msg.userId + "]拒绝接收文件：" + fileSendName);
+                updateEvent("[" + msg.userId + "]拒绝接收文件：" + fileSendName);
             }
             elif(msg.data == TYPE[File_Over])
             {
-                UpdateEvent("[" + msg.userId + "]已接收文件：" + fileSendName);
+                updateEvent("[" + msg.userId + "]已接收文件：" + fileSendName);
                 if (saveTrans) dataTrans.close();
             }
             elif(msg.data == TYPE[File_Fail])
             {
-                UpdateEvent("[" + msg.userId + "]未能成功接收文件：" + fileSendName);
+                updateEvent("[" + msg.userId + "]未能成功接收文件：" + fileSendName);
                 if (saveTrans) dataTrans.close();
             }
             else {			//请求发送数据包
@@ -858,7 +832,7 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
                             dataTrans.open("TransLog.txt", ios::out);
                         dataTrans << "发送数据包 " << dataIndex << "\t  " << strlen(packageData[dataIndex]) << endl;
                     }
-                    SendMSG(msg.join(packageData[dataIndex], TYPE[FileData], msg.userId, "服务器"));
+                    sendMSG(msg.join(packageData[dataIndex], TYPE[FileData], msg.userId, "服务器"));
                 }
             }
             if (sft.fileSendOver == 0 && (msg.data == TYPE[File_NO] || msg.data == TYPE[File_Over] || msg.data == TYPE[File_Fail]))
@@ -876,7 +850,7 @@ int CmfcServer1Dlg::fileTransfer(MyMsg & msg, const char * pData)
             }
         }
         else { //转发给目的用户的数据暂存到服务器
-         //SendMSG( msg.join(strstr(pData,STR[4])+3,msg.type,msg.toUser,msg.userId) );
+         //sendMSG( msg.join(strstr(pData,STR[4])+3,msg.type,msg.toUser,msg.userId) );
         }
     }
     else {
@@ -894,24 +868,24 @@ void CmfcServer1Dlg::sendFileToOthers(bool first)
             SetTimer(1, 2, 0);
         }
         static int sendAt = 0;
-        if (isOnline(sft.fileToUser)) {
+        if (isUserOnline(sft.fileToUser)) {
             if (sft.fileToUser == "公共聊天室" || sft.fileToUser == TYPE[AllUser]) {
                 if (sendAt < userNum) { //还没有发送完毕
                     while (!(userInfo[sendAt].Online) || userInfo[sendAt].User == sft.fileFromUser)
                         ++sendAt;
                     if (sendAt < userNum) {
                         Sleep(20);
-                        SendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], userInfo[sendAt].User, sft.fileFromUser));
+                        sendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], userInfo[sendAt].User, sft.fileFromUser));
                         ++sendAt;
                     }
                 }
             }
             else {
-                SendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], sft.fileToUser, "服务器"));
+                sendMSG(mymsg.join(sft.fileInfo, TYPE[FileSend], sft.fileToUser, "服务器"));
                 sft.fileSendOver = 1;
             }
         }
-        if (sendAt >= userNum || !isOnline(sft.fileToUser)) {
+        if (sendAt >= userNum || !isUserOnline(sft.fileToUser)) {
             sendAt = 0;
             sft.fileSendOver = 1;
         }
@@ -926,6 +900,7 @@ void CmfcServer1Dlg::modifyStatus(CString sta, bool _sleep)
     ::SendMessage(h, SB_SETBKCOLOR, 1, RGB(0, 125, 205));
 }
 
+//-----------RecvFile类两个成员函数------------//
 //这两个函数使用了theApp,因此不能放在类声明中
 void RecvFile::addPacketage(const char *data)
 {
@@ -933,7 +908,7 @@ void RecvFile::addPacketage(const char *data)
     if (packageRecv < packageNum) {
         packageRecv++;
         if (packageRecv < packageNum)		//还有数据包没有接收
-            pDlg->SendMSG(pDlg->mymsg.join(getPackRecv(), TYPE[AskFileData], pDlg->fileUser, "服务器"));//请求下一个数据包
+            pDlg->sendMSG(pDlg->mymsg.join(getPackRecv(), TYPE[AskFileData], pDlg->fileUser, "服务器"));//请求下一个数据包
         strcpy_s(packageData[packageRecv - 1], data);
     }
     if (pDlg != NULL) {
@@ -942,13 +917,14 @@ void RecvFile::addPacketage(const char *data)
             timeNow = clock();
             CString str;
             str.Format("文件已接收 %.1f%%！    用时 %.1fs   平均速度 %.1fk/s", 100.0 * packageRecv / packageNum
-                , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
+                       , (clock() - timeStart) / 1000.0, 1.0*packageRecv / packageNum*fileLength / ((clock() - timeStart)));
             pDlg->modifyStatus(str, 0);
         }
     }
     if (packageNum == packageRecv)
         saveFile(clock() - timeStart);
 }
+
 void RecvFile::saveFile(int useTime)
 {
     static CmfcServer1Dlg* pDlg = static_cast<CmfcServer1Dlg*>(theApp.GetMainWnd());
@@ -969,18 +945,18 @@ void RecvFile::saveFile(int useTime)
         char newFileMD5[33] = "";
         md5.fileMd5(newFileMD5, (LPCTSTR)fileNewName);
         if (fileMD5 == CString(newFileMD5)) {
-            pDlg->SendMSG(pDlg->mymsg.join(TYPE[File_Over], TYPE[AskFileData], pDlg->fileUser, "服务器"));
+            pDlg->sendMSG(pDlg->mymsg.join(TYPE[File_Over], TYPE[AskFileData], pDlg->fileUser, "服务器"));
             timeMsg.Format("    用时 %.1fs   平均速度 %.1fk/s", useTime / 1000.0, 1.0*fileLength / useTime);
             pDlg->modifyStatus("文件已接收完毕！" + timeMsg, 0);
             pDlg->sendFileToOthers(1);
             clear = 0;
-            pDlg->UpdateEvent("接收并保存文件成功", "温馨提示");
+            pDlg->updateEvent("接收并保存文件成功", "温馨提示");
             //MessageBox(hWnd,"接收并保存文件成功","温馨提示",0);
         }
         else {
-            pDlg->SendMSG(pDlg->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], pDlg->fileUser, "服务器"));
+            pDlg->sendMSG(pDlg->mymsg.join(TYPE[File_Fail], TYPE[AskFileData], pDlg->fileUser, "服务器"));
             //MessageBox(hWnd,"接收或保存文件失败，请稍后再试！（错误代码：0x00041)","温馨提示",0);
-            pDlg->UpdateEvent("接收或保存文件失败，请稍后再试！（错误代码：0x00041)", "温馨提示");
+            pDlg->updateEvent("接收或保存文件失败，请稍后再试！（错误代码：0x00041)", "温馨提示");
             pDlg->modifyStatus("文件接收失败", 0);
             DeleteFile(fileNewName);
         }

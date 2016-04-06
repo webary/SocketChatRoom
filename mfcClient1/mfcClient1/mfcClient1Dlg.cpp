@@ -12,7 +12,6 @@
 using namespace std;
 
 char packageData[MAX_PACKAGE_NUM][2 * PACKAGE_SIZE + 1]; //文件包数据
-extern CString TYPE[30]; //引入消息类型
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

@@ -2,11 +2,11 @@
 #ifndef _CLIENTSOCKET_H_
 #define _CLIENTSOCKET_H_
 
+#include <afxsock.h>
+
 #define DATA_BUF_SIZE   (32*1024) //数据缓冲区大小
 #define PACKAGE_SIZE    (512)     //文件拆包后每个包最大字节数
 #define MAX_PACKAGE_NUM (16*1024) //最大数据包数目
-
-#include <afxsock.h>
 
 #define MBox(s) MessageBox(s,"温馨提示")
 #define MBox2(s1,s2) MessageBox(s1,s2)
@@ -24,7 +24,8 @@
 	}\
 }
 
-extern CString STR[5];      //连接消息的各个部分
+extern CString TYPE[30];  //引入消息类型
+extern CString STR[5];    //连接消息的各个部分
 
 //负责消息解析和封装的类，定义为struct让所有数据成员都公开
 struct MyMsg
@@ -35,9 +36,10 @@ struct MyMsg
     CString fromUser;   //消息来自
     CString toUser;     //消息去向
     CString data;       //消息内容
-    //返回去除str前n个字符之后的右边剩余的子串
-    static CString rightN(CString str, int n) {
-        return str.Right(str.GetLength() - n);
+
+    explicit MyMsg(const CString str = "") {
+        if (str != "")
+            load(str);
     }
     //载入消息，即解析消息。OLMsg标记是否是离线消息
     CString load(CString str, bool OLMsg = 0) {
@@ -72,6 +74,10 @@ struct MyMsg
             _user = userId;
         //用户名+密码+来自+去向+类型+内容
         return _user + STR[0] + _pw + STR[1] + _from + STR[2] + _to + STR[3] + _type + STR[4] + _data;
+    }
+    //返回去除str前n个字符之后的右边剩余的子串
+    static CString rightN(CString str, int n) {
+        return str.Right(str.GetLength() - n);
     }
 };
 
