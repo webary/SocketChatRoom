@@ -47,10 +47,7 @@ public:
 class CmfcClient1Dlg : public CDialogEx, public ClientInfo
 {
 public:
-    CmfcClient1Dlg(CWnd* pParent = NULL) : CDialogEx(CmfcClient1Dlg::IDD, pParent)
-    {
-        pChatlog = NULL;
-    }
+    CmfcClient1Dlg(CWnd* pParent = NULL);
     ~CmfcClient1Dlg();
 
     enum { IDD = IDD_MFCCLIENT1_DIALOG };
@@ -68,6 +65,7 @@ public:
     NOTIFYICONDATA nd;      //通知栏图标
     CComboBox m_cbMsgTo;    //发送给下拉框
     MyMsg mymsg;
+    bool autoConnect;       //是否在执行自动定时连接服务器的过程
 public:
     //接收到消息，需要处理
     void receData();

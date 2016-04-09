@@ -118,6 +118,14 @@ ClientInfo::ClientInfo() {
 
 
 //------------------- CmfcClient1Dlg 类的成员函数实现 -----------------------//
+
+CmfcClient1Dlg::CmfcClient1Dlg(CWnd* pParent)
+    : CDialogEx(CmfcClient1Dlg::IDD, pParent)
+    , pChatlog(NULL)
+    , autoConnect(0)
+{
+}
+
 CmfcClient1Dlg::~CmfcClient1Dlg()
 {
     if (m_connected) {
@@ -299,7 +307,9 @@ void CmfcClient1Dlg::OnTimer(UINT nIDEvent)
         m_fileSendName = m_fileSendName.Right(m_fileSendName.GetLength() - m_fileSendName.ReverseFind('\\') - 1);
     }
     elif(nIDEvent == 4) {	//服务器断开后每隔一段时间主动尝试连接
+        autoConnect = 1;
         OnConnect();
+        autoConnect = 0;
     }
     CDialog::OnTimer(nIDEvent);
 }
@@ -346,8 +356,10 @@ void CmfcClient1Dlg::OnConnect()
         GetDlgItem(IDC_Connect)->EnableWindow(0); //连接请求送出但还未被回应前屏蔽连接按钮
     }
     else {
-        if (!firstCon)
-            MessageBox("连接服务器失败：" + pSock->getLastErrorStr(), "温馨提示");
+        if (!firstCon) {
+            if (!autoConnect)
+                MessageBox("连接服务器失败：" + pSock->getLastErrorStr(), "温馨提示", MB_ICONERROR);
+        }
         else
             firstCon = 0;
         return;
