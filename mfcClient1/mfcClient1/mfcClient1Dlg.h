@@ -50,7 +50,9 @@ public:
     CmfcClient1Dlg(CWnd* pParent = NULL);
     ~CmfcClient1Dlg();
 
-    enum { IDD = IDD_MFCCLIENT1_DIALOG };
+    enum {
+        IDD = IDD_MFCCLIENT1_DIALOG
+    };
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV 支持
@@ -83,7 +85,7 @@ public:
     //弹出登录对话框要求登录
     bool login();
 
-// 消息映射函数
+    // 消息映射函数
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     afx_msg void OnPaint();
     afx_msg HCURSOR OnQueryDragIcon();

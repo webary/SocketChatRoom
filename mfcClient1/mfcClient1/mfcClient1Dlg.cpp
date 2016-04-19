@@ -24,7 +24,9 @@ public:
     CAboutDlg() : CDialogEx(CAboutDlg::IDD)
     {}
 
-    enum { IDD = IDD_ABOUTBOX };
+    enum {
+        IDD = IDD_ABOUTBOX
+    };
 };
 
 
@@ -47,7 +49,7 @@ void RecvFile::addPacketage(const char *data)
     }
     static long timeNow = timeStart;
     if (pDlg != 0) {
-        if (clock() - timeNow>400) {
+        if (clock() - timeNow > 400) {
             timeNow = clock();
             CString str;
             str.Format("文件已接收 %.1f%%！    用时 %.1fs   平均速度 %.1fk/s", 100.0 * packageRecv / packageNum
@@ -199,8 +201,8 @@ BOOL CmfcClient1Dlg::OnInitDialog()
     style &= ~WS_THICKFRAME;//使窗口不能用鼠标改变大小
     ::SetWindowLong(GetSafeHwnd(), GWL_STYLE, style);
 
-    HWND h = ::CreateStatusWindow(WS_CHILD | WS_VISIBLE, "就绪!", this->m_hWnd, 0);
-    ::SendMessage(h, SB_SETBKCOLOR, 1, RGB(0, 120, 200));
+    HWND h = ::CreateStatusWindow(WS_CHILD | WS_VISIBLE, "就绪!", m_hWnd, 0);
+    ::SendMessage(h, SB_SETBKCOLOR, 0, RGB(0, 120, 200));
 
     GetDlgItem(IDC_DataReceive)->EnableWindow(0);	//禁用这些控件
     GetDlgItem(IDC_DataSend)->EnableWindow(0);
@@ -829,10 +831,10 @@ void CmfcClient1Dlg::fileSend(MyMsg& msg)
 
 void CmfcClient1Dlg::modifyStatus(const CString &sta, bool _sleep)	//修改状态栏
 {
-    HWND h = ::CreateStatusWindow(WS_CHILD | WS_VISIBLE, sta, m_hWnd, 0);
+    HWND h = CreateStatusWindow(WS_CHILD | WS_VISIBLE, sta, m_hWnd, 0);
     if (_sleep)
-        Sleep(10 * _sleep);
-    ::SendMessage(h, SB_SETBKCOLOR, 1, RGB(0, 125, 205));
+        Sleep(20);
+    ::SendMessage(h, SB_SETBKCOLOR, 0, RGB(0, 125, 205));
 }
 
 bool CmfcClient1Dlg::login()
