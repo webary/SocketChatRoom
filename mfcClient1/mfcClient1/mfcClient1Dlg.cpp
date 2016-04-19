@@ -201,7 +201,7 @@ BOOL CmfcClient1Dlg::OnInitDialog()
     style &= ~WS_THICKFRAME;//使窗口不能用鼠标改变大小
     ::SetWindowLong(GetSafeHwnd(), GWL_STYLE, style);
 
-    HWND h = ::CreateStatusWindow(WS_CHILD | WS_VISIBLE, "就绪!", m_hWnd, 0);
+    HWND h = CreateStatusWindow(WS_CHILD | WS_VISIBLE, "就绪!", m_hWnd, 0);
     ::SendMessage(h, SB_SETBKCOLOR, 0, RGB(0, 120, 200));
 
     GetDlgItem(IDC_DataReceive)->EnableWindow(0);	//禁用这些控件
